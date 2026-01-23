@@ -189,7 +189,9 @@ Potential issues and how to handle them.
 
 ## Common Mistakes to Avoid
 
-1. **Hardcoding SDK methods** - Reference files should say "How to create a client" not `Client.create()`. The method might change.
+1. **Hardcoding XMTP SDK methods** - Reference files should say "How to create a client" not `Client.create()`. XMTP SDK methods change frequently.
+
+   **Exception:** Domain constants (like `identifierKind: "Ethereum"`) and external library patterns (wagmi, viem) are more stable and can be included when they're the source of developer confusion.
 
 2. **Duplicating content** - If you write the same information twice, it will diverge. Pick one location.
 
