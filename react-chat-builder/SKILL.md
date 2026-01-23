@@ -28,39 +28,36 @@ This skill follows a 4-phase execution focused on producing **consumer-grade** o
 
 ## Phase 0: Documentation Lookup (REQUIRED)
 
-**Before ANY code generation, you MUST query current XMTP documentation.**
+> **CRITICAL:** Never use training data for XMTP SDK methods. The SDK evolves
+> frequently. All method names, signatures, and patterns MUST be looked up from
+> current documentation before generating any code.
 
-This is non-negotiable. XMTP SDK APIs change frequently. Never rely on training data for SDK method names.
+### Required Queries Before Code Generation
 
-### Step 1: Query XMTP Docs
+Use XMTP docs MCP if available, fallback to llms.txt:
 
-Use XMTP docs MCP if available:
-```
-search_xmtp_docs("browser SDK client create conversations messages streaming")
-get_xmtp_doc_chunk(chunk_id)
-```
+| Feature | Query |
+|---------|-------|
+| Client creation | `search_xmtp_docs("browser SDK client create initialize signer")` |
+| Streaming | `search_xmtp_docs("stream conversations messages real-time callbacks")` |
+| Content types | `search_xmtp_docs("content types attachments reactions replies")` |
+| Groups | `search_xmtp_docs("group chat create permissions members admin")` |
+| Consent | `search_xmtp_docs("consent state allow block spam filter")` |
+| Sync | `search_xmtp_docs("sync conversations messages history")` |
 
-Fallback to llms.txt:
+After searching, use `get_xmtp_doc_chunk(id)` to read the full content of relevant results.
+
+**Fallback:** If XMTP docs MCP is unavailable:
 ```
 WebFetch({
   url: "https://docs.xmtp.org/llms-full.txt",
-  prompt: "Extract current browser SDK patterns for client creation and streaming"
+  prompt: "Extract current browser SDK patterns for [specific feature]"
 })
 ```
 
-### Step 2: Look Up Each Purpose
+### Look Up Each Purpose
 
-For each "Look Up" item in the reference files you're implementing, find the current way to do it. The reference files describe **what** needs to happen (purposes), not **how** (method names).
-
-Example: If reference says "Look Up: How to create a DM conversation", query docs to find the current method signature.
-
-### Step 3: Never Use Training Data for SDK Methods
-
-Do NOT assume method names from training data. Always verify:
-- Client creation patterns
-- Streaming method signatures
-- Conversation creation methods
-- Message sending patterns
+For each "Look Up" item in reference files, find the current way to do it. Reference files describe **what** needs to happen (purposes), not **how** (method names).
 
 **Do not proceed to Phase 1 until you have looked up all SDK patterns you'll need.**
 
@@ -247,74 +244,6 @@ The interface is stable (we define it). The implementation adapts to current SDK
 - Match file structure and naming conventions
 - See [references/design-system-integration.md](references/design-system-integration.md)
 
-**Reference File Structure:**
-Each reference file contains three sections:
-1. **Interface** - TypeScript types to copy exactly (stable API contract)
-2. **Rules** - MUST/NEVER invariants to follow
-3. **Look Up** - What to query from XMTP docs before implementing
-
-## XMTP Documentation (MANDATORY)
-
-**CRITICAL: Never make assumptions about XMTP SDK patterns based on training data. The XMTP SDK evolves frequently. You MUST query current documentation before generating ANY code.**
-
-### Documentation Sources (in order of preference)
-
-**1. XMTP Docs MCP (Primary)**
-
-Use the XMTP docs MCP tools to query current documentation:
-
-```
-# Search for relevant documentation
-search_xmtp_docs("browser SDK client create initialize")
-
-# Fetch full content of a specific chunk by ID
-get_xmtp_doc_chunk(chunk_id)
-```
-
-**Required queries before code generation:**
-
-| Feature | Query |
-|---------|-------|
-| Client creation | `search_xmtp_docs("browser SDK client create initialize signer")` |
-| Streaming | `search_xmtp_docs("stream conversations messages real-time callbacks")` |
-| Content types | `search_xmtp_docs("content types attachments reactions replies")` |
-| Groups | `search_xmtp_docs("group chat create permissions members admin")` |
-| Consent | `search_xmtp_docs("consent state allow block spam filter")` |
-| Sync | `search_xmtp_docs("sync conversations messages history")` |
-
-After searching, use `get_xmtp_doc_chunk(id)` to read the full content of relevant results.
-
-**2. XMTP llms.txt (Fallback)**
-
-If the XMTP docs MCP is unavailable, fetch the llms.txt directly:
-
-```
-WebFetch({
-  url: "https://docs.xmtp.org/llms-full.txt",
-  prompt: "Extract code examples for [specific feature]"
-})
-```
-
-Available endpoints:
-- `https://docs.xmtp.org/llms.txt` - Index and overview
-- `https://docs.xmtp.org/llms-full.txt` - Complete documentation with code
-
-### What to Look Up
-
-Before writing any XMTP code, query docs for current patterns:
-
-| Purpose | What to Find |
-|---------|--------------|
-| Client creation | Current method signature and required parameters |
-| Streaming | How to subscribe to conversations and messages |
-| Creating DMs | How to start a 1:1 conversation (address resolution steps) |
-| Creating groups | How to create multi-party conversations |
-| Consent | How to check/set consent state for spam filtering |
-| Content types | How to register and use content type codecs |
-| Sync | How to sync conversation/message history |
-
-**Never assume method names from training data.** The SDK evolves frequently. Always look up the current way to do each operation.
-
 ## Bundler Configuration
 
 XMTP uses WASM and Web Workers internally. Configure the bundler before running:
@@ -399,94 +328,21 @@ After generation, verify installation works:
 
 ## Design System Integration
 
-**Applies when:** Q3 = Pre-built AND Q2 = Match my app's design (or inferred from context)
+**Applies when:** Q3 = Pre-built AND Q2 = Match my app's design
 
-### 1. Token Detection
-- CSS custom properties (`--color-*`, `--spacing-*`, etc.)
-- Tailwind theme config (colors, spacing, borderRadius, fonts)
-- Sass/Less variables if present
-
-### 2. Pattern Matching
-- Find existing Button component → match its structure
-- Find existing Input component → use same field patterns
-- Find existing Card/Container patterns → apply to chat containers
-- Find existing Avatar/List patterns → reuse for conversations
-- Analyze spacing rhythm (4px, 8px grids, etc.)
-- Match typography scale
-
-### 3. Component Generation
-Generate chat components that:
-- Import and use existing components where they fit
-- Apply existing utility classes/tokens to new elements
-- Follow the app's naming conventions
-- Match file structure patterns
-
-### Example
-If app has:
-```tsx
-// components/ui/Button.tsx
-<button className="btn btn-primary px-4 py-2 rounded-lg">
-```
-
-Then generate:
-```tsx
-// components/chat/SendButton.tsx
-<Button variant="primary">Send</Button>  // Reuse existing
-```
-
-NOT:
-```tsx
-<button className="bg-blue-500 text-white px-4 py-2 rounded">  // Don't reinvent
-```
-
-### For New/Greenfield Apps
-When no design system is detected:
-1. Use unstyled Base UI components as foundation
-2. Generate minimal, semantic CSS (not Tailwind classes)
-3. Provide CSS custom properties for easy theming
-4. Include a `chat-theme.css` with sensible defaults
-
-See [references/design-system-integration.md](references/design-system-integration.md) for full patterns.
+See [references/design-system-integration.md](references/design-system-integration.md) for:
+- Token detection (CSS custom properties, Tailwind config)
+- Pattern matching (Button, Input, Card patterns)
+- Component generation strategies
+- Greenfield app defaults
 
 ## Consumer UX Requirements
 
 **Applies when:** Q3 = Pre-built
 
-All generated components MUST include:
-
-### Loading States
-- Skeleton loaders for messages, conversations
-- Subtle spinners for actions (sending, loading more)
-- No visible "initializing", "connecting", or "loading" text
-
-### Error Handling
-- Error boundaries at conversation and message level
-- Retry actions for failed sends
-- Graceful degradation, never blank screens
-
-### Empty States
-- Friendly messaging for empty inbox
-- Clear CTAs to start conversations
-- Contextual help text
-
-### Transitions
-- Smooth list animations
-- Message send/receive animations
-- View transitions (mobile list ↔ thread)
-
-### Accessibility
-- Proper focus management
-- Keyboard navigation
-- Screen reader announcements for new messages
-
-### Developer-Focused Elements → Silent by Default
-
-| Developer Pattern | Consumer Pattern |
-|-------------------|------------------|
-| `<StatusIndicator status="connecting" />` | Loading skeleton |
-| Text: "Sending..." | Subtle opacity change + spinner icon |
-| Text: "Failed to send" | Red icon + tap-to-retry gesture |
-| Console.log errors | Error boundary with friendly message |
-| "Reconnecting to network..." | Silent reconnection, toast only on failure after 5s |
-
-**Debug mode (optional):** Use `NEXT_PUBLIC_XMTP_DEBUG=true` to enable console logging and connection status display.
+See [references/consumer-ux-requirements.md](references/consumer-ux-requirements.md) for:
+- Loading states (skeletons, spinners)
+- Error handling (boundaries, retry actions)
+- Empty states (friendly messaging, CTAs)
+- Transitions (list animations, view transitions)
+- Accessibility (focus management, keyboard navigation)
