@@ -220,11 +220,33 @@ optimizeDeps: {
 
 ## Troubleshooting
 
-### Coinbase Wallet / Third-Party Resources Blocked
+### Coinbase Smart Wallet (Base Account SDK) Incompatibility
 
-If using RainbowKit with Coinbase Wallet (or other third-party services like OAuth providers, analytics), you may see resources blocked due to missing CORP headers.
+**Known Issue:** XMTP and Coinbase Smart Wallet have conflicting header requirements:
 
-**Solution:** Change `Cross-Origin-Embedder-Policy` from `require-corp` to `credentialless`:
+| Requirement | XMTP | Coinbase Smart Wallet |
+|-------------|------|----------------------|
+| `Cross-Origin-Opener-Policy` | `same-origin` (required for SharedArrayBuffer) | Must NOT be `same-origin` (needs popup communication) |
+
+This is a fundamental architectural conflict. The Base Account SDK requires popup communication with the Base Account app, which `COOP: same-origin` blocks.
+
+**Workarounds:**
+
+1. **Use EOA wallets instead of Smart Wallets** - MetaMask, Rainbow, etc. work with `same-origin`
+
+2. **Isolate XMTP in an iframe** - Host the XMTP chat in an iframe with cross-origin isolation headers, while the parent page uses relaxed headers for Coinbase:
+   ```
+   Parent page: No COOP header (allows Coinbase popups)
+   XMTP iframe: COOP: same-origin + COEP: require-corp
+   ```
+
+3. **Wait for browser APIs** - Future specs may provide more granular control over cross-origin isolation
+
+**Note:** Changing `COEP` to `credentialless` does NOT solve this issue. The conflict is with `COOP`, not `COEP`.
+
+### Other Third-Party Resources Blocked (OAuth, Analytics)
+
+If third-party resources (not Coinbase Smart Wallet) are blocked due to missing CORP headers, change `Cross-Origin-Embedder-Policy` from `require-corp` to `credentialless`:
 
 ```typescript
 // Next.js
@@ -238,10 +260,10 @@ If using RainbowKit with Coinbase Wallet (or other third-party services like OAu
 ```
 
 **Trade-offs:**
-- `require-corp` (XMTP default): Stricter, requires all cross-origin resources to have CORP headers
-- `credentialless`: More permissive, allows cross-origin resources but sends them without credentials
+- `require-corp`: Stricter, requires all cross-origin resources to have CORP headers
+- `credentialless`: More permissive, sends cross-origin requests without credentials
 
-**Browser support:** `credentialless` is supported in Chrome 96+, Firefox 119+, but **not Safari**. If Safari support is required and you need Coinbase Wallet, you may need to handle this at the infrastructure level.
+**Browser support:** `credentialless` works in Chrome 96+, Firefox 119+, but **not Safari**.
 
 ### Error: "Failed to execute 'fetch' on 'WorkerGlobalScope'"
 
