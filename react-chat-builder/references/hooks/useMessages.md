@@ -48,12 +48,42 @@ export function useMessages(conversationId: string): UseMessagesReturn;
 - Support cursor-based pagination for loading older messages
 - Clean up streams on unmount or conversation change
 - Dynamic import content type packages (SSR compatibility)
+- **Cache getSnapshot results** when using `useSyncExternalStore` (see below)
 
 **NEVER:**
 - Show duplicate messages in the UI
 - Block UI while sending (use optimistic updates)
 - Leave orphaned streams when switching conversations
 - Assume message order from network (sort by sentAtNs)
+- **Create new array/object references in getSnapshot** - causes infinite loops
+
+**STABLE SNAPSHOT PATTERN (useSyncExternalStore):**
+
+React's `useSyncExternalStore` requires `getSnapshot` to return a cached/stable reference. If it returns a new reference each call, React detects a "change" and re-renders infinitely.
+
+```typescript
+// ❌ BAD: Creates new array reference every call → infinite loop
+const messages = useSyncExternalStore(
+  store.subscribe,
+  () => store.getState().messages.filter(m => m.conversationId === id)
+);
+
+// ✅ GOOD: Store messages by conversation ID, return stable reference
+const EMPTY_MESSAGES: Message[] = [];
+const messages = useSyncExternalStore(
+  store.subscribe,
+  () => store.getState().messagesByConversation.get(id) ?? EMPTY_MESSAGES
+);
+
+// ✅ GOOD: Use Zustand's useStore with shallow comparison
+import { useShallow } from 'zustand/react/shallow';
+
+const messages = useInboxStore(
+  useShallow(state => state.messagesByConversation.get(id) ?? EMPTY_MESSAGES)
+);
+```
+
+**Key insight:** Structure the store so filtered data is pre-computed (e.g., `Map<conversationId, Message[]>`) rather than filtering in `getSnapshot`.
 
 **OPTIMISTIC UPDATE FLOW:**
 ```

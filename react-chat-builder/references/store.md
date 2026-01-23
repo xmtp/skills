@@ -170,33 +170,102 @@ export const useInboxStore = create<InboxStore>()(
 
 ### Rule: Derived selectors must return stable references
 
-Selectors returning derived data (sorted, filtered, transformed) must not create new arrays/objects on every render—this causes infinite re-render loops and repeated XMTP client initialization.
+Selectors returning derived data (sorted, filtered, transformed) must not create new arrays/objects on every call—this causes infinite re-render loops with React's warning:
 
-### Look Up: React state selector patterns
+> "The result of getSnapshot should be cached to avoid an infinite loop"
 
-See prerequisite skill for stable selector and memoization patterns.
+### Why This Happens
+
+Both `useSyncExternalStore` and Zustand's `useStore` call `getSnapshot`/selector on every render. If the function returns a new reference (even with identical content), React detects a "change" and re-renders, creating an infinite loop.
+
+```typescript
+// ❌ BAD: Object.values() creates new array every call
+const messages = useInboxStore(state => Object.values(state.messages[convId] ?? {}));
+
+// ❌ BAD: .filter() creates new array every call
+const allowed = useInboxStore(state =>
+  Object.values(state.conversations).filter(c => c.consentState === 'allowed')
+);
+
+// ❌ BAD: Spread creates new object every call
+const pagination = useInboxStore(state => ({
+  cursor: state.cursors[convId],
+  hasMore: state.hasMore[convId]
+}));
+```
+
+### Solution: Use useShallow or Memoized Selectors
+
+```typescript
+import { useShallow } from 'zustand/react/shallow';
+
+// ✅ GOOD: useShallow does shallow comparison, prevents re-render if values equal
+const messages = useInboxStore(
+  useShallow(state => Object.values(state.messages[convId] ?? {}))
+);
+
+// ✅ GOOD: useShallow with object
+const pagination = useInboxStore(
+  useShallow(state => ({
+    cursor: state.cursors[convId] ?? null,
+    hasMore: state.hasMore[convId] ?? true
+  }))
+);
+
+// ✅ GOOD: Select primitive directly (no transformation)
+const status = useInboxStore(state => state.status);
+
+// ✅ GOOD: Select by ID returns stable reference if object is stable
+const conversation = useInboxStore(state => state.conversations[id] ?? null);
+```
+
+### Alternative: Pre-compute in Store
+
+Structure the store so derived data is pre-computed on write, not computed on read:
+
+```typescript
+// Instead of filtering conversations by consent on read,
+// maintain separate indexes updated on write
+interface InboxState {
+  conversations: Record<string, Conversation>;
+  // Pre-computed indexes
+  conversationIdsByConsent: Record<ConsentState, string[]>;
+}
+```
 
 ### Interface
 
 ```typescript
 // stores/selectors.ts
+import { useShallow } from 'zustand/react/shallow';
 
 // Primitives: direct selectors are fine
-export const useConnectionStatus = () => useInboxStore(
-  (state) => state.status
-);
+export const useConnectionStatus = () => useInboxStore(state => state.status);
 
 // Single item by ID: stable if item reference is stable
 export const useConversation = (id: string) => useInboxStore(
-  (state) => state.conversations[id] ?? null
+  state => state.conversations[id] ?? null
 );
 
-// Derived data: Look Up current patterns for stable references
-// DO NOT return Object.values(), .sort(), .filter(), or {...} directly from selector
-export function useSortedConversations(): Conversation[];
-export function useMessages(convId: string): Message[];
-export function useConversationsByConsent(consentState: ConsentState): Conversation[];
-export function usePagination(convId: string): { cursor: string | null; hasMore: boolean };
+// Derived data: MUST use useShallow
+export const useMessages = (convId: string) => useInboxStore(
+  useShallow(state => Object.values(state.messages[convId] ?? {}))
+);
+
+export const useSortedConversations = () => useInboxStore(
+  useShallow(state =>
+    Object.values(state.conversations).sort((a, b) =>
+      Number((b.lastMessageAt ?? 0n) - (a.lastMessageAt ?? 0n))
+    )
+  )
+);
+
+export const usePagination = (convId: string) => useInboxStore(
+  useShallow(state => ({
+    cursor: state.cursors[convId] ?? null,
+    hasMore: state.hasMore[convId] ?? true
+  }))
+);
 ```
 
 ## Optimistic Updates
