@@ -1,6 +1,6 @@
 # XMTP Skills
 
-Skills for building with [XMTP](https://xmtp.org), the open protocol for secure web3 messaging.
+Skills for building with [XMTP](https://xmtp.org), the open protocol for secure, decentralized messaging between people and agents.
 
 Skills are folders of instructions, scripts, and resources that AI coding agents load dynamically to improve performance on specialized tasks. They follow the [Agent Skills](https://agentskills.io/) format.
 
@@ -18,7 +18,7 @@ Build a complete, consumer-grade encrypted chat experience for React/Next.js/Vit
 
 **Use when:**
 - Adding encrypted messaging to a React application
-- Building web3 chat or wallet-to-wallet messaging
+- Building secure chat or wallet-to-wallet messaging
 - Integrating XMTP SDK for DMs or group chat
 
 **What it generates:**
