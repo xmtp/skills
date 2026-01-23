@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# Test artifacts
+tests/e2e/screenshots/*.png
+/tmp/xmtp-snapshot.txt
+
+# Build
+dist/
