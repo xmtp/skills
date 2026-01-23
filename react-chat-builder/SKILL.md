@@ -116,6 +116,19 @@ Use AskUserQuestion to gather requirements. Do NOT use "(Recommended)" labels - 
 
 **Note on Q6:** Text messages are always included. "All features" selects attachments + reactions + replies.
 
+### Question Batching (IMPORTANT)
+
+AskUserQuestion supports **max 4 questions per call**. You MUST ask questions in multiple rounds:
+
+**Round 1:** Q1 (Chat Type), Q2 (Styling), Q3 (Components), Q4 (Wallet)
+- After answers: Ask Q3b if Q3="Pre-built" AND component library detected
+- After answers: Ask Q4b if Q4 = RainbowKit, ConnectKit, or Web3Modal
+
+**Round 2:** Q5 (Conversations), Q6 (Features), Q7 (Requests), Q8 (Identity)
+- After answers: Ask Q8b if Q8="Custom resolver"
+
+Do NOT attempt to ask more than 4 questions at once—the tool will silently drop questions beyond the limit.
+
 ### Conditional Questions
 
 **Q3b - Component library** (only if Q3="Pre-built" AND a component library detected):
@@ -123,7 +136,7 @@ Use AskUserQuestion to gather requirements. Do NOT use "(Recommended)" labels - 
 |----------|---------|
 | I detected {library}. Use it or generate Base UI? | Use {library} / Use Base UI |
 
-**Q4b - WalletConnect project ID** (only if Q4 = RainbowKit, ConnectKit, or Web3Modal):
+**Q4b - WalletConnect project ID** (if Q4 answered OR detected as RainbowKit, ConnectKit, or Web3Modal):
 | Question | Options |
 |----------|---------|
 | Do you have a WalletConnect project ID? | Yes, I have one / Skip for now / I need to get one |
@@ -180,10 +193,10 @@ The interface is stable (we define it). The implementation adapts to current SDK
 
 **Always Generate:**
 - `XMTPProvider.tsx` - Context provider with client initialization
-- `useXMTP.ts` - Core hook for client state
-- `useConversations.ts` - List and stream conversations
-- `useMessages.ts` - Messages with send functionality
-- `inbox.ts` - Zustand store for state management
+- `useXMTP.ts` - Core hook for client state - see [references/hooks/useXMTP.md](references/hooks/useXMTP.md)
+- `useConversations.ts` - List and stream conversations - see [references/hooks/useConversations.md](references/hooks/useConversations.md)
+- `useMessages.ts` - Messages with send functionality - see [references/hooks/useMessages.md](references/hooks/useMessages.md)
+- `inbox.ts` - Zustand store for state management - see [references/store.md](references/store.md)
 - `xmtp-streaming.ts` - Stream management with reconnection
 - `xmtp.ts` - TypeScript types
 - `.env.example` - Environment configuration
@@ -192,12 +205,35 @@ The interface is stable (we define it). The implementation adapts to current SDK
 - `next.config.ts` or `vite.config.ts` - Bundler configuration for WASM/workers (merge with existing)
 - `package.json` - Add `--webpack` flags for Next.js 16+ (if applicable)
 
-**Conditional Generation:**
-- `useConversation.ts` - Single conversation + groups (if groups enabled)
-- Components in `chat/` directory (if pre-built selected)
+**Conditional Hooks:**
+- `useConversation.ts` (if Q5 = DMs + Groups) - see [references/hooks/useConversation.md](references/hooks/useConversation.md)
+- `useIdentity.ts` (if Q8 = ENS or Custom) - see [references/hooks/useIdentity.md](references/hooks/useIdentity.md)
+- `useConsent.ts` (if Q7 = Yes) - see [references/hooks/useConsent.md](references/hooks/useConsent.md)
+
+**Conditional Components:**
+- `ChatContainer.tsx` (if Q3 = Pre-built) - see [references/components/ChatContainer.md](references/components/ChatContainer.md)
+- `ConversationList.tsx` (if Q3 = Pre-built) - see [references/components/ConversationList.md](references/components/ConversationList.md)
+- `MessageThread.tsx` (if Q3 = Pre-built) - see [references/components/MessageThread.md](references/components/MessageThread.md)
+- `NewChatDialog.tsx` (if Q3 = Pre-built) - see [references/components/NewChatDialog.md](references/components/NewChatDialog.md)
+- `StatusToast.tsx` (if Q3 = Pre-built) - see [references/components/StatusToast.md](references/components/StatusToast.md)
+- `IdentityBadge.tsx` (if Q3 = Pre-built AND Q8 = ENS or Custom) - see [references/components/IdentityBadge.md](references/components/IdentityBadge.md)
+- `RequestsInbox.tsx` (if Q3 = Pre-built AND Q7 = Yes) - see [references/components/RequestsInbox.md](references/components/RequestsInbox.md)
+- `GroupManagement.tsx` (if Q3 = Pre-built AND Q5 = DMs + Groups) - see [references/components/GroupManagement.md](references/components/GroupManagement.md)
+- `FilePicker.tsx` (if Q3 = Pre-built AND Q6 includes Attachments) - see [references/components/FilePicker.md](references/components/FilePicker.md)
+- `ReactionPicker.tsx` (if Q3 = Pre-built AND Q6 includes Reactions) - see [references/components/ReactionPicker.md](references/components/ReactionPicker.md)
+- `ReplyComposer.tsx` (if Q3 = Pre-built AND Q6 includes Replies) - see [references/components/ReplyComposer.md](references/components/ReplyComposer.md)
+
+**Conditional Layouts:**
+- `FullAppLayout.tsx` (if Q3 = Pre-built AND Q1 = Full messaging app) - see [references/layouts/FullAppLayout.md](references/layouts/FullAppLayout.md)
+- `WidgetLayout.tsx` (if Q3 = Pre-built AND Q1 = Chat widget) - see [references/layouts/WidgetLayout.md](references/layouts/WidgetLayout.md)
+
+**Conditional Styling:**
+- `chat-theme.css` (if Q2 = Default OR Q2 = Unstyled) - see [references/styling/ChatTheme.md](references/styling/ChatTheme.md)
+
+**Conditional Wallet Setup:**
 - Wallet provider setup (if not detected and selected) - see [references/wallet-providers.md](references/wallet-providers.md)
 
-**Consumer UX Requirements (MANDATORY for all components):**
+**Consumer UX Requirements (MANDATORY when Q3 = Pre-built):**
 - Loading skeletons (never "Loading..." text) - see [references/components/LoadingSkeletons.md](references/components/LoadingSkeletons.md)
 - Empty states with CTAs - see [references/components/EmptyStates.md](references/components/EmptyStates.md)
 - Error boundaries with retry actions
@@ -211,10 +247,11 @@ The interface is stable (we define it). The implementation adapts to current SDK
 - Match file structure and naming conventions
 - See [references/design-system-integration.md](references/design-system-integration.md)
 
-**Reference Files:**
-- [references/hooks/](references/hooks/) - Hook interfaces, rules, and lookup purposes
-- [references/components/](references/components/) - Component interfaces, UX rules, and lookup purposes
-- [references/store.md](references/store.md) - Zustand store implementation
+**Reference File Structure:**
+Each reference file contains three sections:
+1. **Interface** - TypeScript types to copy exactly (stable API contract)
+2. **Rules** - MUST/NEVER invariants to follow
+3. **Look Up** - What to query from XMTP docs before implementing
 
 ## XMTP Documentation (MANDATORY)
 
@@ -362,7 +399,7 @@ After generation, verify installation works:
 
 ## Design System Integration
 
-When the user selects "Match my app's design" (or this is inferred from context):
+**Applies when:** Q3 = Pre-built AND Q2 = Match my app's design (or inferred from context)
 
 ### 1. Token Detection
 - CSS custom properties (`--color-*`, `--spacing-*`, etc.)
@@ -412,6 +449,8 @@ When no design system is detected:
 See [references/design-system-integration.md](references/design-system-integration.md) for full patterns.
 
 ## Consumer UX Requirements
+
+**Applies when:** Q3 = Pre-built
 
 All generated components MUST include:
 
