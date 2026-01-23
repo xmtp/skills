@@ -15,6 +15,7 @@ All generated wallet providers MUST:
 
 1. **Gracefully handle missing projectId** - Show warning, don't crash
 2. **Maintain QueryClient for React Query** - Required for XMTP hooks
+3. **Handle SSR hydration mismatch (Next.js only)** - Wallet state differs between server and client
 
 ### Minimal Fallback Pattern
 
@@ -35,6 +36,37 @@ if (!projectId) {
   return <MinimalProviders>{children}</MinimalProviders>;
 }
 ```
+
+### SSR Hydration Pattern (Next.js)
+
+Wallet hooks return different values on server vs client, causing hydration mismatches. Use a mounted guard in components that consume wallet state:
+
+```typescript
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAccount } from 'wagmi';
+
+export function WalletStatus() {
+  const [mounted, setMounted] = useState(false);
+  const { address, isConnected } = useAccount();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Render nothing or skeleton until client-side hydration completes
+  if (!mounted) {
+    return <div className="h-10 w-32 animate-pulse bg-gray-200 rounded" />;
+  }
+
+  return isConnected ? <span>{address}</span> : <ConnectButton />;
+}
+```
+
+**When to use:** Any component that reads wallet state (`useAccount`, `useBalance`, `useEnsName`, etc.) and renders on the server.
+
+**Alternative:** Wrap wallet-dependent UI in `dynamic(() => import(...), { ssr: false })` to skip SSR entirely.
 
 ## RainbowKit Setup
 

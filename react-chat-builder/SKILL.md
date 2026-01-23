@@ -277,6 +277,27 @@ This applies to the core SDK and all content type packages.
 
 **Type definitions:** Define local types to avoid importing SDK types at build time. See `references/hooks/useXMTP.md` for the pattern.
 
+## SDK Type Assertions
+
+The XMTP browser SDK exports generic types (`Client<unknown>`, `Conversation<unknown>`) that don't expose all runtime properties. Generated code may need type assertions for properties like:
+
+- `conversation.conversationType` ("dm" | "group")
+- `conversation.peerInboxId` (for DMs)
+- `conversation.members` (for groups)
+
+**Pattern:** Define local interfaces for runtime properties and use assertions:
+
+```typescript
+interface ConversationWithType {
+  conversationType: "dm" | "group";
+  peerInboxId?: string;
+}
+
+const convType = (conversation as unknown as ConversationWithType).conversationType;
+```
+
+This is intentional - the SDK types are loose to accommodate API evolution. Implementations should assert only the properties they need.
+
 ## Security Requirements
 
 Follow security checklist in [references/security.md](references/security.md):

@@ -220,6 +220,29 @@ optimizeDeps: {
 
 ## Troubleshooting
 
+### Coinbase Wallet / Third-Party Resources Blocked
+
+If using RainbowKit with Coinbase Wallet (or other third-party services like OAuth providers, analytics), you may see resources blocked due to missing CORP headers.
+
+**Solution:** Change `Cross-Origin-Embedder-Policy` from `require-corp` to `credentialless`:
+
+```typescript
+// Next.js
+{
+  key: "Cross-Origin-Embedder-Policy",
+  value: "credentialless",  // Instead of "require-corp"
+}
+
+// Vite
+"Cross-Origin-Embedder-Policy": "credentialless",
+```
+
+**Trade-offs:**
+- `require-corp` (XMTP default): Stricter, requires all cross-origin resources to have CORP headers
+- `credentialless`: More permissive, allows cross-origin resources but sends them without credentials
+
+**Browser support:** `credentialless` is supported in Chrome 96+, Firefox 119+, but **not Safari**. If Safari support is required and you need Coinbase Wallet, you may need to handle this at the infrastructure level.
+
 ### Error: "Failed to execute 'fetch' on 'WorkerGlobalScope'"
 
 This error occurs when WASM files can't be loaded in Web Workers due to blob: URL resolution issues.

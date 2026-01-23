@@ -47,12 +47,46 @@ Note: The interface exposes `peerAddress` (user-friendly Ethereum address). The 
 - Filter conversations by consent state before adding to store
 - Await all stream operations (they return Promises)
 - Clean up streams on unmount
+- **Stabilize array options** - Use constants or refs for default values (see below)
 
 **NEVER:**
 - Expose inbox IDs in the hook's public API - users work with addresses
 - Skip the "can receive messages" check - it prevents confusing errors
 - Pass raw Ethereum addresses to DM/group creation methods - resolve to inbox first
 - Assume stream methods are synchronous
+- **Use inline arrays in useEffect/useCallback dependencies** - Creates new reference each render
+
+**ARRAY STABILITY PATTERN:**
+
+Options like `consentStates` are arrays. Passing inline arrays (`["allowed", "unknown"]`) creates new references each render, breaking memoization:
+
+```typescript
+// ❌ BAD: New array reference every render
+useConversations({ consentStates: ["allowed", "unknown"] });
+
+// ✅ GOOD: Stable reference via constant
+const DEFAULT_CONSENT_STATES: ConsentState[] = ["allowed", "unknown"];
+useConversations({ consentStates: DEFAULT_CONSENT_STATES });
+```
+
+**Inside the hook implementation**, stabilize with string comparison:
+
+```typescript
+// Stabilize array props to prevent infinite loops
+const consentStatesKey = options?.consentStates?.sort().join(",") ?? "";
+const stableConsentStates = useMemo(
+  () => options?.consentStates ?? DEFAULT_CONSENT_STATES,
+  [consentStatesKey]
+);
+
+// Guard against re-initialization
+const initializedRef = useRef(false);
+useEffect(() => {
+  if (initializedRef.current) return;
+  initializedRef.current = true;
+  // ... initialization logic
+}, [stableConsentStates]);
+```
 
 **OPTIMISTIC GROUP CREATION:**
 - Allow creating a group with no members (empty array) - user can add members later
