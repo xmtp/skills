@@ -27,31 +27,12 @@ Next.js 16+ uses Turbopack by default, but Turbopack has limited WASM support. P
 
 ### Required next.config.ts
 
-This configuration enables WASM support and sets required CORS headers for SharedArrayBuffer:
+This configuration enables WASM support:
 
 ```typescript
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Required for SharedArrayBuffer (XMTP uses this for WASM workers)
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "Cross-Origin-Opener-Policy",
-            value: "same-origin",
-          },
-          {
-            key: "Cross-Origin-Embedder-Policy",
-            value: "require-corp",
-          },
-        ],
-      },
-    ];
-  },
-
   webpack(config, { isServer, dev }) {
     // Enable WebAssembly
     config.experiments = {
@@ -105,24 +86,16 @@ export default defineConfig({
 
   optimizeDeps: {
     // Exclude XMTP packages from pre-bundling
-    exclude: ['@xmtp/wasm-bindings', '@xmtp/browser-sdk'],
-    // Include proto for optimization
-    include: ['@xmtp/proto'],
+    exclude: ['@xmtp/browser-sdk'],
   },
 
   worker: {
     format: 'es',
   },
-
-  server: {
-    headers: {
-      // Required for SharedArrayBuffer
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
-  },
 });
 ```
+
+**Note:** No COOP/COEP headers are required. The XMTP browser SDK works without SharedArrayBuffer.
 
 ## Merging with Existing Config
 
@@ -144,26 +117,6 @@ const hasViteConfig = exists('vite.config.js') ||
 
 If `next.config.ts` exists, add to it rather than replacing:
 
-**Pattern for merging headers:**
-
-```typescript
-// Existing config may have headers - merge them
-async headers() {
-  const existingHeaders = await existingConfig.headers?.() ?? [];
-
-  return [
-    ...existingHeaders,
-    {
-      source: "/(.*)",
-      headers: [
-        { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-        { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
-      ],
-    },
-  ];
-}
-```
-
 **Pattern for merging webpack config:**
 
 ```typescript
@@ -180,7 +133,16 @@ webpack(config, options) {
     layers: true,
   };
 
-  // ... rest of XMTP config
+  // Configure WASM output path
+  config.output.webassemblyModuleFilename =
+    options.isServer && !options.dev
+      ? "../static/wasm/[modulehash].wasm"
+      : "static/wasm/[modulehash].wasm";
+
+  // Fix worker public path
+  if (!options.isServer) {
+    config.output.workerPublicPath = "/_next/";
+  }
 
   return config;
 }
@@ -208,62 +170,12 @@ For Vite, merge into existing arrays:
 optimizeDeps: {
   exclude: [
     ...(existingConfig.optimizeDeps?.exclude ?? []),
-    '@xmtp/wasm-bindings',
     '@xmtp/browser-sdk',
-  ],
-  include: [
-    ...(existingConfig.optimizeDeps?.include ?? []),
-    '@xmtp/proto',
   ],
 },
 ```
 
 ## Troubleshooting
-
-### Coinbase Smart Wallet (Base Account SDK) Incompatibility
-
-**Known Issue:** XMTP and Coinbase Smart Wallet have conflicting header requirements:
-
-| Requirement | XMTP | Coinbase Smart Wallet |
-|-------------|------|----------------------|
-| `Cross-Origin-Opener-Policy` | `same-origin` (required for SharedArrayBuffer) | Must NOT be `same-origin` (needs popup communication) |
-
-This is a fundamental architectural conflict. The Base Account SDK requires popup communication with the Base Account app, which `COOP: same-origin` blocks.
-
-**Workarounds:**
-
-1. **Use EOA wallets instead of Smart Wallets** - MetaMask, Rainbow, etc. work with `same-origin`
-
-2. **Isolate XMTP in an iframe** - Host the XMTP chat in an iframe with cross-origin isolation headers, while the parent page uses relaxed headers for Coinbase:
-   ```
-   Parent page: No COOP header (allows Coinbase popups)
-   XMTP iframe: COOP: same-origin + COEP: require-corp
-   ```
-
-3. **Wait for browser APIs** - Future specs may provide more granular control over cross-origin isolation
-
-**Note:** Changing `COEP` to `credentialless` does NOT solve this issue. The conflict is with `COOP`, not `COEP`.
-
-### Other Third-Party Resources Blocked (OAuth, Analytics)
-
-If third-party resources (not Coinbase Smart Wallet) are blocked due to missing CORP headers, change `Cross-Origin-Embedder-Policy` from `require-corp` to `credentialless`:
-
-```typescript
-// Next.js
-{
-  key: "Cross-Origin-Embedder-Policy",
-  value: "credentialless",  // Instead of "require-corp"
-}
-
-// Vite
-"Cross-Origin-Embedder-Policy": "credentialless",
-```
-
-**Trade-offs:**
-- `require-corp`: Stricter, requires all cross-origin resources to have CORP headers
-- `credentialless`: More permissive, sends cross-origin requests without credentials
-
-**Browser support:** `credentialless` works in Chrome 96+, Firefox 119+, but **not Safari**.
 
 ### Error: "Failed to execute 'fetch' on 'WorkerGlobalScope'"
 
@@ -276,14 +188,6 @@ if (!isServer) {
   config.output.workerPublicPath = "/_next/";
 }
 ```
-
-### Error: "SharedArrayBuffer is not defined"
-
-This occurs when CORS headers are missing.
-
-**Solution:** Add the Cross-Origin headers to your configuration:
-- `Cross-Origin-Opener-Policy: same-origin`
-- `Cross-Origin-Embedder-Policy: require-corp`
 
 ### Next.js 16 Warning: "webpack config with no turbopack config"
 
@@ -303,3 +207,7 @@ Ensure both `dev` and `build` scripts use the same bundler:
   }
 }
 ```
+
+### Module not found: @xmtp/browser-sdk
+
+Ensure the package is installed and listed in `serverExternalPackages` to prevent Next.js from trying to bundle it for SSR.
