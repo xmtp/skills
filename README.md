@@ -21,11 +21,7 @@ Query current XMTP documentation to get accurate SDK patterns before writing cod
 - Verifying current API signatures before coding
 - Finding examples for streaming, consent, groups, or content types
 
-**Available tools:**
-- `search_xmtp_docs(query, limit)` - Keyword search across all XMTP docs
-- `get_xmtp_doc_chunk(id, maxChars)` - Fetch full content of a specific chunk
-
-**Fallback:** If MCP unavailable, uses `https://docs.xmtp.org/llms-full.txt`
+**How it works:** Uses WebFetch to query `https://docs.xmtp.org/llms-full.txt`
 
 ## Installation
 

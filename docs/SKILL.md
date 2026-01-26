@@ -25,71 +25,9 @@ Training data may contain outdated patterns like:
 
 Always query documentation first to get current, working patterns.
 
-## Available Tools
+## How to Query
 
-| Tool | Purpose | Parameters |
-|------|---------|------------|
-| `search_xmtp_docs` | Keyword search across all XMTP docs | `query` (string), `limit` (number, default 5) |
-| `get_xmtp_doc_chunk` | Fetch full content of a specific chunk | `id` (string from search), `maxChars` (number, default 6000) |
-
-## Workflow
-
-### Step 1: Search
-
-Use targeted queries with multiple relevant keywords:
-
-```
-search_xmtp_docs("browser SDK client create initialize signer")
-```
-
-Review the returned chunks. Each result includes:
-- `id` - Use this to fetch full content
-- `title` - Document title
-- `snippet` - Preview of the content
-
-### Step 2: Retrieve
-
-Fetch full content for relevant chunks:
-
-```
-get_xmtp_doc_chunk(id: "chunk-id-from-search", maxChars: 6000)
-```
-
-**maxChars guidance:**
-- `3000` - Quick reference, single concept
-- `6000` - Full examples with context (default)
-- `10000+` - Complete guides or tutorials
-
-### Step 3: Present
-
-Extract the specific patterns needed and present them clearly:
-- Method signatures with current parameter names
-- Import statements with correct package names
-- Working code examples adapted to the user's context
-
-## Effective Query Patterns
-
-| Need | Query |
-|------|-------|
-| Client setup | `"browser SDK client create initialize signer"` |
-| Streaming messages | `"stream conversations messages real-time callbacks"` |
-| Group chat | `"group chat create permissions members admin"` |
-| Consent/spam | `"consent state allow block spam filter"` |
-| Content types | `"content types attachments reactions replies"` |
-| Sync/history | `"sync conversations messages history"` |
-| Installation | `"browser SDK npm package install dependencies"` |
-| WASM/bundler | `"webpack vite WASM worker configuration"` |
-
-### Query Tips
-
-1. **Include SDK context** - Add "browser SDK" to distinguish from Node.js patterns
-2. **Use multiple keywords** - `"stream messages"` finds more than `"streaming"`
-3. **Be specific** - `"group permissions admin"` vs just `"groups"`
-4. **Check multiple chunks** - First result may not be the most relevant
-
-## Fallback: WebFetch
-
-If the XMTP docs MCP is unavailable, use the llms.txt endpoint:
+Use WebFetch with the XMTP llms.txt endpoint:
 
 ```
 WebFetch({
@@ -98,39 +36,96 @@ WebFetch({
 })
 ```
 
-This file contains the full documentation optimized for LLM consumption.
+This file contains the full XMTP documentation optimized for LLM consumption.
 
-## Integration with Other Skills
+## Effective Query Prompts
 
-This skill is a foundation for XMTP-related skills. For example, `react-chat-builder` uses these patterns in its Phase 0 documentation lookup.
+| Need | Prompt |
+|------|--------|
+| Client setup | `"Extract current browser SDK client creation and initialization patterns with signer"` |
+| Streaming | `"Extract patterns for streaming conversations and messages with callbacks"` |
+| Group chat | `"Extract group chat creation, permissions, and member management patterns"` |
+| Consent/spam | `"Extract consent state management patterns for allow, block, and spam filtering"` |
+| Content types | `"Extract content type patterns for attachments, reactions, and replies"` |
+| Sync/history | `"Extract conversation and message sync patterns for loading history"` |
+| Installation | `"Extract browser SDK package names and installation instructions"` |
+| Bundler config | `"Extract webpack and vite configuration for WASM and workers"` |
 
-When building XMTP features:
-1. Run documentation queries using this skill's patterns
-2. Extract current method signatures
-3. Generate code using looked-up patterns, not training data
+## Workflow
 
-## Common Lookup Scenarios
+### Step 1: Identify What You Need
+
+Before querying, identify the specific XMTP features you need:
+- Client initialization?
+- Message streaming?
+- Group management?
+- Content types?
+
+### Step 2: Query Documentation
+
+Make a targeted WebFetch request:
+
+```
+WebFetch({
+  url: "https://docs.xmtp.org/llms-full.txt",
+  prompt: "Extract the current method signatures and code examples for creating an XMTP client with a wallet signer in the browser SDK"
+})
+```
+
+### Step 3: Extract and Apply
+
+From the response, extract:
+- Correct import statements and package names
+- Current method signatures
+- Working code examples
+
+Apply these patterns directly—don't mix with training data.
+
+## Query Tips
+
+1. **Be specific** - "browser SDK client creation" not just "client"
+2. **Ask for examples** - "with code examples" gets working snippets
+3. **Include context** - "for React/Next.js" if framework-specific
+4. **Request signatures** - "method signatures" gets exact APIs
+
+## Common Queries
 
 ### Before Creating a Client
 ```
-search_xmtp_docs("browser SDK client create signer wallet")
-get_xmtp_doc_chunk(id: "...", maxChars: 6000)
+WebFetch({
+  url: "https://docs.xmtp.org/llms-full.txt",
+  prompt: "Extract browser SDK client creation patterns including signer setup, environment configuration, and database options"
+})
 ```
 
 ### Before Implementing Streaming
 ```
-search_xmtp_docs("stream conversations messages callbacks cancel")
-get_xmtp_doc_chunk(id: "...", maxChars: 6000)
+WebFetch({
+  url: "https://docs.xmtp.org/llms-full.txt",
+  prompt: "Extract patterns for streaming new conversations and messages, including how to cancel streams"
+})
 ```
 
 ### Before Adding Content Types
 ```
-search_xmtp_docs("content types register codec attachments")
-get_xmtp_doc_chunk(id: "...", maxChars: 6000)
+WebFetch({
+  url: "https://docs.xmtp.org/llms-full.txt",
+  prompt: "Extract content type registration and codec patterns for attachments and reactions"
+})
 ```
 
 ### Before Configuring Bundler
 ```
-search_xmtp_docs("webpack vite next.js WASM configuration")
-get_xmtp_doc_chunk(id: "...", maxChars: 10000)
+WebFetch({
+  url: "https://docs.xmtp.org/llms-full.txt",
+  prompt: "Extract Next.js and Vite configuration requirements for XMTP WASM and workers"
+})
 ```
+
+## Integration with Other Skills
+
+This skill provides the documentation lookup pattern for XMTP-related skills. When building XMTP features:
+
+1. Query documentation using the patterns above
+2. Extract current method signatures
+3. Generate code using looked-up patterns, not training data
