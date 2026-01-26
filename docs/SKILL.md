@@ -17,115 +17,81 @@ Query current XMTP documentation to find accurate SDK patterns before writing co
 > frequently and method names change between versions. All method names,
 > signatures, and patterns MUST be looked up from current documentation.
 
-Training data may contain outdated patterns like:
-- Deprecated client initialization methods
-- Old package names (`@xmtp/xmtp-js` vs `@xmtp/browser-sdk`)
-- Removed or renamed content type APIs
-- Obsolete streaming patterns
-
-Always query documentation first to get current, working patterns.
-
 ## How to Query
 
-Use WebFetch with the XMTP llms.txt endpoint:
+Use WebFetch with specific documentation pages for SDK code examples:
+
+```
+WebFetch({
+  url: "https://docs.xmtp.org/chat-apps/sdks/browser",
+  prompt: "Extract code examples for [specific feature]"
+})
+```
+
+## SDK Implementation Pages
+
+These pages contain code examples. Use for implementation lookups:
+
+| Need | URL |
+|------|-----|
+| Browser SDK setup | `https://docs.xmtp.org/chat-apps/sdks/browser` |
+| Create a signer | `https://docs.xmtp.org/chat-apps/core-messaging/create-a-signer` |
+| Create a client | `https://docs.xmtp.org/chat-apps/core-messaging/create-a-client` |
+| Create conversations | `https://docs.xmtp.org/chat-apps/core-messaging/create-conversations` |
+| Send messages | `https://docs.xmtp.org/chat-apps/core-messaging/send-messages` |
+| List conversations | `https://docs.xmtp.org/chat-apps/list-stream-sync/list` |
+| Stream messages | `https://docs.xmtp.org/chat-apps/list-stream-sync/stream` |
+| Sync conversations | `https://docs.xmtp.org/chat-apps/list-stream-sync/sync-and-syncall` |
+| Group permissions | `https://docs.xmtp.org/chat-apps/core-messaging/group-permissions` |
+| User consent | `https://docs.xmtp.org/chat-apps/user-consent/support-user-consent` |
+| Content types | `https://docs.xmtp.org/chat-apps/content-types/content-types` |
+| Attachments | `https://docs.xmtp.org/chat-apps/content-types/attachments` |
+| Reactions | `https://docs.xmtp.org/chat-apps/content-types/reactions` |
+| Replies | `https://docs.xmtp.org/chat-apps/content-types/replies` |
+
+## Protocol Concepts
+
+For understanding how XMTP works (not code examples), use the full docs:
 
 ```
 WebFetch({
   url: "https://docs.xmtp.org/llms-full.txt",
-  prompt: "Extract current browser SDK patterns for [specific feature]"
+  prompt: "Extract [concept] - how it works and why"
 })
 ```
 
-This file contains the full XMTP documentation optimized for LLM consumption.
+Good for: identity model, epochs, gateway service setup, fee structure, security properties.
 
-## Effective Query Prompts
+## Example Queries
 
-| Need | Prompt |
-|------|--------|
-| Client setup | `"Extract current browser SDK client creation and initialization patterns with signer"` |
-| Streaming | `"Extract patterns for streaming conversations and messages with callbacks"` |
-| Group chat | `"Extract group chat creation, permissions, and member management patterns"` |
-| Consent/spam | `"Extract consent state management patterns for allow, block, and spam filtering"` |
-| Content types | `"Extract content type patterns for attachments, reactions, and replies"` |
-| Sync/history | `"Extract conversation and message sync patterns for loading history"` |
-| Installation | `"Extract browser SDK package names and installation instructions"` |
-| Bundler config | `"Extract webpack and vite configuration for WASM and workers"` |
+### Get browser SDK code patterns
+```
+WebFetch({
+  url: "https://docs.xmtp.org/chat-apps/sdks/browser",
+  prompt: "Extract all code examples for client creation, conversations, and messaging"
+})
+```
 
-## Workflow
+### Get signer implementation
+```
+WebFetch({
+  url: "https://docs.xmtp.org/chat-apps/core-messaging/create-a-signer",
+  prompt: "Extract signer creation code for EOA and smart contract wallets"
+})
+```
 
-### Step 1: Identify What You Need
+### Get streaming patterns
+```
+WebFetch({
+  url: "https://docs.xmtp.org/chat-apps/list-stream-sync/stream",
+  prompt: "Extract code examples for streaming conversations and messages"
+})
+```
 
-Before querying, identify the specific XMTP features you need:
-- Client initialization?
-- Message streaming?
-- Group management?
-- Content types?
-
-### Step 2: Query Documentation
-
-Make a targeted WebFetch request:
-
+### Understand the identity model
 ```
 WebFetch({
   url: "https://docs.xmtp.org/llms-full.txt",
-  prompt: "Extract the current method signatures and code examples for creating an XMTP client with a wallet signer in the browser SDK"
+  prompt: "Extract the identity model - how inbox IDs, identities, and installations work"
 })
 ```
-
-### Step 3: Extract and Apply
-
-From the response, extract:
-- Correct import statements and package names
-- Current method signatures
-- Working code examples
-
-Apply these patterns directly—don't mix with training data.
-
-## Query Tips
-
-1. **Be specific** - "browser SDK client creation" not just "client"
-2. **Ask for examples** - "with code examples" gets working snippets
-3. **Include context** - "for React/Next.js" if framework-specific
-4. **Request signatures** - "method signatures" gets exact APIs
-
-## Common Queries
-
-### Before Creating a Client
-```
-WebFetch({
-  url: "https://docs.xmtp.org/llms-full.txt",
-  prompt: "Extract browser SDK client creation patterns including signer setup, environment configuration, and database options"
-})
-```
-
-### Before Implementing Streaming
-```
-WebFetch({
-  url: "https://docs.xmtp.org/llms-full.txt",
-  prompt: "Extract patterns for streaming new conversations and messages, including how to cancel streams"
-})
-```
-
-### Before Adding Content Types
-```
-WebFetch({
-  url: "https://docs.xmtp.org/llms-full.txt",
-  prompt: "Extract content type registration and codec patterns for attachments and reactions"
-})
-```
-
-### Before Configuring Bundler
-```
-WebFetch({
-  url: "https://docs.xmtp.org/llms-full.txt",
-  prompt: "Extract Next.js and Vite configuration requirements for XMTP WASM and workers"
-})
-```
-
-## Integration with Other Skills
-
-This skill provides the documentation lookup pattern for XMTP-related skills. When building XMTP features:
-
-1. Query documentation using the patterns above
-2. Extract current method signatures
-3. Generate code using looked-up patterns, not training data
