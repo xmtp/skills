@@ -39,7 +39,7 @@ Copy the skill folder to your agent's plugins directory.
 
 - [XMTP Documentation](https://docs.xmtp.org/)
 - [Agent Skills Specification](https://agentskills.io/)
-- [XMTP Discord](https://discord.gg/xmtp)
+- [Join the XMTP Developer Community](https://forms.gle/hesZ55WGMjJnZ7sQA)
 
 ## License
 
