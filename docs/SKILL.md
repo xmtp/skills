@@ -19,79 +19,60 @@ Query current XMTP documentation to find accurate SDK patterns before writing co
 
 ## How to Query
 
-Use WebFetch with specific documentation pages for SDK code examples:
+### Step 1: Find the right page
+
+Use the docs index to find which page has what you need:
 
 ```
 WebFetch({
-  url: "https://docs.xmtp.org/chat-apps/sdks/browser",
-  prompt: "Extract code examples for [specific feature]"
+  url: "https://docs.xmtp.org/llms.txt",
+  prompt: "Find the page URL for [topic]"
 })
 ```
 
-## SDK Implementation Pages
+### Step 2: Fetch that page
 
-These pages contain code examples. Use for implementation lookups:
-
-| Need | URL |
-|------|-----|
-| Browser SDK setup | `https://docs.xmtp.org/chat-apps/sdks/browser` |
-| Create a signer | `https://docs.xmtp.org/chat-apps/core-messaging/create-a-signer` |
-| Create a client | `https://docs.xmtp.org/chat-apps/core-messaging/create-a-client` |
-| Create conversations | `https://docs.xmtp.org/chat-apps/core-messaging/create-conversations` |
-| Send messages | `https://docs.xmtp.org/chat-apps/core-messaging/send-messages` |
-| List conversations | `https://docs.xmtp.org/chat-apps/list-stream-sync/list` |
-| Stream messages | `https://docs.xmtp.org/chat-apps/list-stream-sync/stream` |
-| Sync conversations | `https://docs.xmtp.org/chat-apps/list-stream-sync/sync-and-syncall` |
-| Group permissions | `https://docs.xmtp.org/chat-apps/core-messaging/group-permissions` |
-| User consent | `https://docs.xmtp.org/chat-apps/user-consent/support-user-consent` |
-| Content types | `https://docs.xmtp.org/chat-apps/content-types/content-types` |
-| Attachments | `https://docs.xmtp.org/chat-apps/content-types/attachments` |
-| Reactions | `https://docs.xmtp.org/chat-apps/content-types/reactions` |
-| Replies | `https://docs.xmtp.org/chat-apps/content-types/replies` |
-
-## Protocol Concepts
-
-For understanding how XMTP works (not code examples), use the full docs:
+Fetch the specific page for complete code examples:
 
 ```
 WebFetch({
-  url: "https://docs.xmtp.org/llms-full.txt",
-  prompt: "Extract [concept] - how it works and why"
+  url: "https://docs.xmtp.org/[path-from-step-1]",
+  prompt: "Extract [specific feature] with code examples"
 })
 ```
 
-Good for: identity model, epochs, gateway service setup, fee structure, security properties.
+## Common Pages
 
-## Example Queries
+| Need | Page |
+|------|------|
+| Browser SDK setup | `/chat-apps/sdks/browser` |
+| Create a signer | `/chat-apps/core-messaging/create-a-signer` |
+| Create a client | `/chat-apps/core-messaging/create-a-client` |
+| Create conversations | `/chat-apps/core-messaging/create-conversations` |
+| Send messages | `/chat-apps/core-messaging/send-messages` |
+| List conversations | `/chat-apps/list-stream-sync/list` |
+| Stream messages | `/chat-apps/list-stream-sync/stream` |
+| Sync conversations | `/chat-apps/list-stream-sync/sync-and-syncall` |
+| Group permissions | `/chat-apps/core-messaging/group-permissions` |
+| User consent | `/chat-apps/user-consent/support-user-consent` |
+| Content types | `/chat-apps/content-types/content-types` |
+| Attachments | `/chat-apps/content-types/attachments` |
+| Reactions | `/chat-apps/content-types/reactions` |
+| Replies | `/chat-apps/content-types/replies` |
 
-### Get browser SDK code patterns
+## Example
+
+To find how to list conversations:
+
 ```
 WebFetch({
-  url: "https://docs.xmtp.org/chat-apps/sdks/browser",
-  prompt: "Extract all code examples for client creation, conversations, and messaging"
+  url: "https://docs.xmtp.org/chat-apps/list-stream-sync/list",
+  prompt: "Extract how to list conversations with code examples"
 })
 ```
 
-### Get signer implementation
-```
-WebFetch({
-  url: "https://docs.xmtp.org/chat-apps/core-messaging/create-a-signer",
-  prompt: "Extract signer creation code for EOA and smart contract wallets"
-})
-```
+## Tips
 
-### Get streaming patterns
-```
-WebFetch({
-  url: "https://docs.xmtp.org/chat-apps/list-stream-sync/stream",
-  prompt: "Extract code examples for streaming conversations and messages"
-})
-```
-
-### Understand the identity model
-```
-WebFetch({
-  url: "https://docs.xmtp.org/llms-full.txt",
-  prompt: "Extract the identity model - how inbox IDs, identities, and installations work"
-})
-```
+1. **Fetch specific pages** - The full docs (llms-full.txt) is 500KB+ and WebFetch may miss content
+2. **Ask for code examples** - Docs include examples for Browser, Node, Kotlin, and Swift
+3. **One topic per query** - Focused queries return better results

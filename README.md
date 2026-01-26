@@ -21,7 +21,7 @@ Query current XMTP documentation to get accurate SDK patterns before writing cod
 - Verifying current API signatures before coding
 - Finding examples for streaming, consent, groups, or content types
 
-**How it works:** Uses WebFetch to query specific documentation pages (e.g., `docs.xmtp.org/chat-apps/sdks/browser`)
+**How it works:** Uses WebFetch to query specific documentation pages via `docs.xmtp.org/llms.txt` index
 
 ## Installation
 
