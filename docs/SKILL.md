@@ -36,43 +36,32 @@ Fetch the specific page for complete code examples:
 
 ```
 WebFetch({
-  url: "https://docs.xmtp.org/[path-from-step-1]",
+  url: "https://docs.xmtp.org[path-from-step-1]",
   prompt: "Extract [specific feature] with code examples"
 })
 ```
 
-## Common Pages
+## Examples
 
-| Need | Page |
-|------|------|
-| Browser SDK setup | `/chat-apps/sdks/browser` |
-| Create a signer | `/chat-apps/core-messaging/create-a-signer` |
-| Create a client | `/chat-apps/core-messaging/create-a-client` |
-| Create conversations | `/chat-apps/core-messaging/create-conversations` |
-| Send messages | `/chat-apps/core-messaging/send-messages` |
-| List conversations | `/chat-apps/list-stream-sync/list` |
-| Stream messages | `/chat-apps/list-stream-sync/stream` |
-| Sync conversations | `/chat-apps/list-stream-sync/sync-and-syncall` |
-| Group permissions | `/chat-apps/core-messaging/group-permissions` |
-| User consent | `/chat-apps/user-consent/support-user-consent` |
-| Content types | `/chat-apps/content-types/content-types` |
-| Attachments | `/chat-apps/content-types/attachments` |
-| Reactions | `/chat-apps/content-types/reactions` |
-| Replies | `/chat-apps/content-types/replies` |
-
-## Example
-
-To find how to list conversations:
-
+**Find how to create a client:**
 ```
-WebFetch({
-  url: "https://docs.xmtp.org/chat-apps/list-stream-sync/list",
-  prompt: "Extract how to list conversations with code examples"
-})
+WebFetch({ url: "https://docs.xmtp.org/llms.txt", prompt: "Find the page URL for creating an XMTP client" })
+// Returns: /chat-apps/core-messaging/create-a-client
+
+WebFetch({ url: "https://docs.xmtp.org/chat-apps/core-messaging/create-a-client", prompt: "Extract how to create a client with code examples" })
+```
+
+**Find how to stream messages:**
+```
+WebFetch({ url: "https://docs.xmtp.org/llms.txt", prompt: "Find the page URL for streaming messages" })
+// Returns: /chat-apps/list-stream-sync/stream
+
+WebFetch({ url: "https://docs.xmtp.org/chat-apps/list-stream-sync/stream", prompt: "Extract streaming patterns with code examples" })
 ```
 
 ## Tips
 
-1. **Fetch specific pages** - The full docs (llms-full.txt) is 500KB+ and WebFetch may miss content
+1. **Always use the index first** - Don't guess URLs; they change when docs reorganize
 2. **Ask for code examples** - Docs include examples for Browser, Node, Kotlin, and Swift
 3. **One topic per query** - Focused queries return better results
+4. **Don't use llms-full.txt** - It's 500KB+ and WebFetch can't reliably search it
