@@ -44,7 +44,7 @@ WebFetch({
 
 ### Implementation
 
-The `xmtp-docs` skill in `/docs` implements this pattern for XMTP documentation. Reference it when building skills that need XMTP SDK lookups.
+The `xmtp-docs` skill in `/xmtp-docs` implements this pattern for XMTP documentation. Reference it when building skills that need XMTP SDK lookups.
 
 ## Writing Skills
 

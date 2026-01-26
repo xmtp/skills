@@ -8,7 +8,7 @@ Skills are folders of instructions and resources that AI coding agents load dyna
 
 | Skill | Description |
 |-------|-------------|
-| [xmtp-docs](./docs) | Query XMTP documentation for current SDK patterns and methods |
+| [xmtp-docs](./xmtp-docs) | Query XMTP documentation for current SDK patterns and methods |
 
 ---
 
