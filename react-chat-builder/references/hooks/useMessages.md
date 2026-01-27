@@ -47,7 +47,7 @@ export function useMessages(conversationId: string): UseMessagesReturn;
 - Await stream methods (they return Promises in current SDK)
 - Support cursor-based pagination for loading older messages
 - Clean up streams on unmount or conversation change
-- Dynamic import content type packages (SSR compatibility)
+- Ensure component is wrapped with `next/dynamic` and `{ ssr: false }` in Next.js (see SKILL.md)
 - **Cache getSnapshot results** when using `useSyncExternalStore` (see below)
 
 **NEVER:**

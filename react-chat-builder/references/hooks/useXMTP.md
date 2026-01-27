@@ -21,7 +21,7 @@ interface UseXMTPReturn {
   updateActivity: () => void; // Reset session timeout on user interaction
 }
 
-// Local type for client reference (avoids build-time WASM resolution)
+// Minimal type for client reference (only the properties the hook exposes)
 type XMTPClient = { inboxId: string; close: () => Promise<void> };
 
 // Signer interface for wallet integration
@@ -40,12 +40,12 @@ type Identifier = {
 export function useXMTP(): UseXMTPReturn;
 ```
 
-Note: The `XMTPClient` type is intentionally minimal to avoid importing SDK types at build time.
+Note: The `XMTPClient` type is intentionally minimal—it only includes properties the hook exposes to consumers.
 
 ## Rules
 
 **MUST:**
-- Use dynamic import for `@xmtp/browser-sdk` - never static import (SSR/WASM compatibility)
+- Ensure the component using this hook is wrapped with `next/dynamic` and `{ ssr: false }` in Next.js (see SKILL.md)
 - Track connection with a token/counter to handle race conditions when user switches accounts
 - Close existing client before creating a new one
 - Validate XMTP environment at runtime (dev/production)
@@ -55,7 +55,6 @@ Note: The `XMTPClient` type is intentionally minimal to avoid importing SDK type
 - Convert wallet signature hex strings to `Uint8Array` before returning from `signMessage`
 
 **NEVER:**
-- Import SDK types at the top level of the file
 - Leave stale clients open when initializing a new connection
 - Expose raw SDK error types to consumers
 - Hard-code environment values - read from env vars
@@ -98,4 +97,4 @@ Before implementing, query XMTP docs for current patterns:
 2. **Environment config**: How to specify dev vs production network
 3. **Signer interface**: Current structure for EOA signers (identifier, identifierKind)
 4. **Client cleanup**: How to properly close/disconnect a client
-5. **Dynamic import**: Confirm the package name and exports for browser SDK
+5. **Package exports**: Confirm the package name and exports for browser SDK

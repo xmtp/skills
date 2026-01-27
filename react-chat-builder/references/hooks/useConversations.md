@@ -48,6 +48,7 @@ Note: The interface exposes `peerAddress` (user-friendly Ethereum address). The 
 - Await all stream operations (they return Promises)
 - Clean up streams on unmount
 - **Stabilize array options** - Use constants or refs for default values (see below)
+- **Use `instanceof` to determine conversation type** - See mapping pattern below
 
 **NEVER:**
 - Expose inbox IDs in the hook's public API - users work with addresses
@@ -87,6 +88,14 @@ useEffect(() => {
   // ... initialization logic
 }, [stableConsentStates]);
 ```
+
+**CONVERSATION TYPES:**
+
+The SDK has separate `Dm` and `Group` classes (both extend `Conversation`). To determine type:
+- Use `instanceof Dm` or `instanceof Group` when mapping from `list()` results
+- Or use `listGroups()` / `listDms()` to get type-specific results directly
+
+Look up current SDK class properties and methods before implementing the mapping.
 
 **OPTIMISTIC GROUP CREATION:**
 - Allow creating a group with no members (empty array) - user can add members later

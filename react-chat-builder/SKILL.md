@@ -257,46 +257,32 @@ See [references/bundler-config.md](references/bundler-config.md) for:
 - Merging with existing configs
 - Troubleshooting common errors
 
-## Dynamic Imports (CRITICAL)
+## SSR Compatibility (Next.js)
 
-XMTP SDK uses WASM and **must** be dynamically imported to avoid SSR bundling issues.
+The XMTP browser SDK requires browser APIs and **cannot run in server environments**. In Next.js, even `"use client"` components are server-rendered for initial HTML—the directive only marks where interactivity begins, not where code runs.
 
-**Rule:** Never use static imports for XMTP packages. Always use dynamic `await import()` inside async functions.
-
-```typescript
-// ❌ Static import - causes build failures
-import { Client } from "@xmtp/...";
-
-// ✅ Dynamic import - works with SSR
-const initialize = async () => {
-  const { Client } = await import("@xmtp/...");
-};
-```
-
-This applies to the core SDK and all content type packages.
-
-**Type definitions:** Define local types to avoid importing SDK types at build time. See `references/hooks/useXMTP.md` for the pattern.
-
-## SDK Type Assertions
-
-The XMTP browser SDK exports generic types (`Client<unknown>`, `Conversation<unknown>`) that don't expose all runtime properties. Generated code may need type assertions for properties like:
-
-- `conversation.conversationType` ("dm" | "group")
-- `conversation.peerInboxId` (for DMs)
-- `conversation.members` (for groups)
-
-**Pattern:** Define local interfaces for runtime properties and use assertions:
+**Rule:** Wrap XMTP components with `next/dynamic` and `{ ssr: false }` to exclude them from server rendering entirely.
 
 ```typescript
-interface ConversationWithType {
-  conversationType: "dm" | "group";
-  peerInboxId?: string;
+// app/page.tsx
+import dynamic from "next/dynamic";
+
+const Chat = dynamic(() => import("@/components/Chat"), { ssr: false });
+
+export default function Page() {
+  return <Chat />;
 }
-
-const convType = (conversation as unknown as ConversationWithType).conversationType;
 ```
 
-This is intentional - the SDK types are loose to accommodate API evolution. Implementations should assert only the properties they need.
+Inside the dynamically imported component, use normal static imports:
+
+```typescript
+// components/Chat.tsx
+"use client";
+import { Client } from "@xmtp/browser-sdk"; // ✅ Safe - component never runs on server
+```
+
+**Vite/CRA:** No special handling needed—these frameworks don't use SSR by default.
 
 ## Security Requirements
 
