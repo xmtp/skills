@@ -32,28 +32,23 @@ This skill follows a 4-phase execution focused on producing **consumer-grade** o
 > frequently. All method names, signatures, and patterns MUST be looked up from
 > current documentation before generating any code.
 
-### Required Queries Before Code Generation
+### How to Look Up
 
-Use XMTP docs MCP if available, fallback to llms.txt:
+Use the `/xmtp-docs` skill to query current documentation. The skill uses a 2-step process:
 
-| Feature | Query |
-|---------|-------|
-| Client creation | `search_xmtp_docs("browser SDK client create initialize signer")` |
-| Streaming | `search_xmtp_docs("stream conversations messages real-time callbacks")` |
-| Content types | `search_xmtp_docs("content types attachments reactions replies")` |
-| Groups | `search_xmtp_docs("group chat create permissions members admin")` |
-| Consent | `search_xmtp_docs("consent state allow block spam filter")` |
-| Sync | `search_xmtp_docs("sync conversations messages history")` |
+1. **Find the page:** Query the docs index for the right URL
+2. **Fetch the page:** Get complete code examples from that page
 
-After searching, use `get_xmtp_doc_chunk(id)` to read the full content of relevant results.
+### Required Lookups Before Code Generation
 
-**Fallback:** If XMTP docs MCP is unavailable:
-```
-WebFetch({
-  url: "https://docs.xmtp.org/llms-full.txt",
-  prompt: "Extract current browser SDK patterns for [specific feature]"
-})
-```
+| Feature | What to find |
+|---------|--------------|
+| Client creation | How to create an XMTP client with a signer |
+| Streaming | How to stream conversations and messages in real-time |
+| Content types | How to use attachments, reactions, and replies |
+| Groups | How to create and manage group chats |
+| Consent | How to handle consent state and spam filtering |
+| Sync | How to sync conversation and message history |
 
 ### Look Up Each Purpose
 
@@ -103,8 +98,8 @@ Use AskUserQuestion to gather requirements. Do NOT use "(Recommended)" labels - 
 | # | Header | Question | Options |
 |---|--------|----------|---------|
 | 1 | Chat Type | What type of chat experience are you building? | Full messaging app / Embedded feature / Chat widget |
-| 2 | Styling | How should the chat components be styled? | Match my app's design / Unstyled Base UI / Default chat styles |
-| 3 | Components | Pre-built UI components or hooks only? | Pre-built components / Hooks only |
+| 2 | Components | Pre-built UI components or hooks only? | Pre-built components / Hooks only |
+| 3 | Styling | How should the chat components be styled? | *(only if Q2 = Pre-built; see conditional options below)* |
 | 4 | Wallet | Which wallet provider? (skip if detected) | RainbowKit / ConnectKit / Web3Modal / I'll add my own |
 | 5 | Conversations | What types of conversations? | DMs + Groups / DMs only |
 | 6 | Features | Which message features? (multiSelect) | All features / Attachments / Reactions / Replies |
@@ -113,12 +108,25 @@ Use AskUserQuestion to gather requirements. Do NOT use "(Recommended)" labels - 
 
 **Note on Q6:** Text messages are always included. "All features" selects attachments + reactions + replies.
 
+**Q3 Options (only if Q2 = Pre-built, conditional on detection):**
+
+| Detection Result | Options |
+|------------------|---------|
+| Design system detected | Match my app's design / Unstyled Base UI / Something else |
+| Empty/greenfield project | Default / Styled / Something else |
+
+- **Match my app's design**: Reuse detected tokens, components, and patterns
+- **Default** / **Unstyled Base UI**: Base UI primitives + chat-theme.css with token structure. User fills in values. (Same behavior, different label based on context.)
+- **Styled**: Claude asks open-ended follow-up (e.g., "Describe the look you're going for") and generates a cohesive theme based on user's direction
+- **Something else**: User describes their preferred approach (e.g., "Use Tailwind with my custom config")
+
 ### Question Batching (IMPORTANT)
 
 AskUserQuestion supports **max 4 questions per call**. You MUST ask questions in multiple rounds:
 
-**Round 1:** Q1 (Chat Type), Q2 (Styling), Q3 (Components), Q4 (Wallet)
-- After answers: Ask Q3b if Q3="Pre-built" AND component library detected
+**Round 1:** Q1 (Chat Type), Q2 (Components), Q4 (Wallet)
+- If Q2 = "Pre-built": include Q3 (Styling) in Round 1 (4 questions total)
+- After answers: Ask Q2b if Q2="Pre-built" AND component library detected
 - After answers: Ask Q4b if Q4 = RainbowKit, ConnectKit, or Web3Modal
 
 **Round 2:** Q5 (Conversations), Q6 (Features), Q7 (Requests), Q8 (Identity)
@@ -128,7 +136,7 @@ Do NOT attempt to ask more than 4 questions at once—the tool will silently dro
 
 ### Conditional Questions
 
-**Q3b - Component library** (only if Q3="Pre-built" AND a component library detected):
+**Q2b - Component library** (only if Q2="Pre-built" AND a component library detected):
 | Question | Options |
 |----------|---------|
 | I detected {library}. Use it or generate Base UI? | Use {library} / Use Base UI |
@@ -154,11 +162,12 @@ Do NOT attempt to ask more than 4 questions at once—the tool will silently dro
 | Q1 Chat Type | `full-app` | Generate routing, navigation, responsive layouts |
 | | `embedded-feature` | Self-contained components, no routing |
 | | `widget` | Minimal overlay UI, toggle mechanism |
-| Q2 Styling | `match-app` | Reuse existing components, tokens, patterns |
-| | `unstyled` | Base UI primitives + CSS custom properties |
-| | `default` | Include standalone `chat-theme.css` |
-| Q3 Components | `pre-built` | Generate UI components in `chat/` directory |
-| | `hooks-only` | Only generate hooks and store, no UI |
+| Q2 Components | `pre-built` | Generate UI components in `chat/` directory, ask Q3 (Styling) |
+| | `hooks-only` | Only generate hooks and store, no UI, skip Q3 |
+| Q3 Styling | `match-app` | Reuse existing components, tokens, patterns |
+| | `default` / `unstyled` | Base UI primitives + chat-theme.css token structure |
+| | `styled` | Ask open-ended follow-up, generate cohesive theme based on direction |
+| | `something-else` | Follow user's described approach |
 | Q4 Wallet | `rainbowkit/connectkit/web3modal` | Generate wallet provider setup + ask for project ID |
 | | `own` | Skip wallet setup, user handles it |
 | Q5 Conversations | `dms-groups` | Generate group management features (useConversation hook) |
@@ -208,29 +217,31 @@ The interface is stable (we define it). The implementation adapts to current SDK
 - `useConsent.ts` (if Q7 = Yes) - see [references/hooks/useConsent.md](references/hooks/useConsent.md)
 
 **Conditional Components:**
-- `ChatContainer.tsx` (if Q3 = Pre-built) - see [references/components/ChatContainer.md](references/components/ChatContainer.md)
-- `ConversationList.tsx` (if Q3 = Pre-built) - see [references/components/ConversationList.md](references/components/ConversationList.md)
-- `MessageThread.tsx` (if Q3 = Pre-built) - see [references/components/MessageThread.md](references/components/MessageThread.md)
-- `NewChatDialog.tsx` (if Q3 = Pre-built) - see [references/components/NewChatDialog.md](references/components/NewChatDialog.md)
-- `StatusToast.tsx` (if Q3 = Pre-built) - see [references/components/StatusToast.md](references/components/StatusToast.md)
-- `IdentityBadge.tsx` (if Q3 = Pre-built AND Q8 = ENS or Custom) - see [references/components/IdentityBadge.md](references/components/IdentityBadge.md)
-- `RequestsInbox.tsx` (if Q3 = Pre-built AND Q7 = Yes) - see [references/components/RequestsInbox.md](references/components/RequestsInbox.md)
-- `GroupManagement.tsx` (if Q3 = Pre-built AND Q5 = DMs + Groups) - see [references/components/GroupManagement.md](references/components/GroupManagement.md)
-- `FilePicker.tsx` (if Q3 = Pre-built AND Q6 includes Attachments) - see [references/components/FilePicker.md](references/components/FilePicker.md)
-- `ReactionPicker.tsx` (if Q3 = Pre-built AND Q6 includes Reactions) - see [references/components/ReactionPicker.md](references/components/ReactionPicker.md)
-- `ReplyComposer.tsx` (if Q3 = Pre-built AND Q6 includes Replies) - see [references/components/ReplyComposer.md](references/components/ReplyComposer.md)
+- `ChatContainer.tsx` (if Q2 = Pre-built) - see [references/components/ChatContainer.md](references/components/ChatContainer.md)
+- `ConversationList.tsx` (if Q2 = Pre-built) - see [references/components/ConversationList.md](references/components/ConversationList.md)
+- `MessageThread.tsx` (if Q2 = Pre-built) - see [references/components/MessageThread.md](references/components/MessageThread.md)
+- `NewChatDialog.tsx` (if Q2 = Pre-built) - see [references/components/NewChatDialog.md](references/components/NewChatDialog.md)
+- `StatusToast.tsx` (if Q2 = Pre-built) - see [references/components/StatusToast.md](references/components/StatusToast.md)
+- `IdentityBadge.tsx` (if Q2 = Pre-built AND Q8 = ENS or Custom) - see [references/components/IdentityBadge.md](references/components/IdentityBadge.md)
+- `RequestsInbox.tsx` (if Q2 = Pre-built AND Q7 = Yes) - see [references/components/RequestsInbox.md](references/components/RequestsInbox.md)
+- `GroupManagement.tsx` (if Q2 = Pre-built AND Q5 = DMs + Groups) - see [references/components/GroupManagement.md](references/components/GroupManagement.md)
+- `FilePicker.tsx` (if Q2 = Pre-built AND Q6 includes Attachments) - see [references/components/FilePicker.md](references/components/FilePicker.md)
+- `ReactionPicker.tsx` (if Q2 = Pre-built AND Q6 includes Reactions) - see [references/components/ReactionPicker.md](references/components/ReactionPicker.md)
+- `ReplyComposer.tsx` (if Q2 = Pre-built AND Q6 includes Replies) - see [references/components/ReplyComposer.md](references/components/ReplyComposer.md)
 
 **Conditional Layouts:**
-- `FullAppLayout.tsx` (if Q3 = Pre-built AND Q1 = Full messaging app) - see [references/layouts/FullAppLayout.md](references/layouts/FullAppLayout.md)
-- `WidgetLayout.tsx` (if Q3 = Pre-built AND Q1 = Chat widget) - see [references/layouts/WidgetLayout.md](references/layouts/WidgetLayout.md)
+- `FullAppLayout.tsx` (if Q2 = Pre-built AND Q1 = Full messaging app) - see [references/layouts/FullAppLayout.md](references/layouts/FullAppLayout.md)
+- `WidgetLayout.tsx` (if Q2 = Pre-built AND Q1 = Chat widget) - see [references/layouts/WidgetLayout.md](references/layouts/WidgetLayout.md)
 
 **Conditional Styling:**
-- `chat-theme.css` (if Q2 = Default OR Q2 = Unstyled) - see [references/styling/ChatTheme.md](references/styling/ChatTheme.md)
+- `chat-theme.css` (if Q3 = Default/Unstyled OR Q3 = Styled) - see [references/styling/ChatTheme.md](references/styling/ChatTheme.md)
+  - Default/Unstyled: token structure with minimal placeholder values
+  - Styled: populated with Claude's recommended values based on user direction
 
 **Conditional Wallet Setup:**
 - Wallet provider setup (if not detected and selected) - see [references/wallet-providers.md](references/wallet-providers.md)
 
-**Consumer UX Requirements (MANDATORY when Q3 = Pre-built):**
+**Consumer UX Requirements (MANDATORY when Q2 = Pre-built):**
 - Loading skeletons (never "Loading..." text) - see [references/components/LoadingSkeletons.md](references/components/LoadingSkeletons.md)
 - Empty states with CTAs - see [references/components/EmptyStates.md](references/components/EmptyStates.md)
 - Error boundaries with retry actions
@@ -300,11 +311,7 @@ Follow security checklist in [references/security.md](references/security.md):
 
 ## Dependencies
 
-**IMPORTANT: Always query XMTP docs for current package names before installing.**
-
-```
-search_xmtp_docs("browser SDK npm package install dependencies")
-```
+**IMPORTANT: Always use `/xmtp-docs` to look up current package names before installing.**
 
 ### What to Look Up
 
@@ -335,7 +342,7 @@ After generation, verify installation works:
 
 ## Design System Integration
 
-**Applies when:** Q3 = Pre-built AND Q2 = Match my app's design
+**Applies when:** Q2 = Pre-built AND Q3 = Match my app's design
 
 See [references/design-system-integration.md](references/design-system-integration.md) for:
 - Token detection (CSS custom properties, Tailwind config)
@@ -345,7 +352,7 @@ See [references/design-system-integration.md](references/design-system-integrati
 
 ## Consumer UX Requirements
 
-**Applies when:** Q3 = Pre-built
+**Applies when:** Q2 = Pre-built
 
 See [references/consumer-ux-requirements.md](references/consumer-ux-requirements.md) for:
 - Loading states (skeletons, spinners)
