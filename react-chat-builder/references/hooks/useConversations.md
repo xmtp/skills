@@ -97,6 +97,13 @@ The SDK has separate `Dm` and `Group` classes (both extend `Conversation`). To d
 
 Look up current SDK class properties and methods before implementing the mapping.
 
+**INBOX ID VS ADDRESS:**
+
+XMTP conversations expose inbox IDs (opaque identifiers), not Ethereum addresses. For features like ENS display or identity resolution, you need the underlying address:
+- Store the peer's Ethereum address in your local Conversation type, not just inbox ID
+- Resolve inbox ID → address when mapping SDK conversations to your store
+- Look up how to perform this resolution before implementing
+
 **OPTIMISTIC GROUP CREATION:**
 - Allow creating a group with no members (empty array) - user can add members later
 - This enables "create first, invite later" UX patterns
@@ -123,5 +130,6 @@ Before implementing, query XMTP docs for current patterns:
 3. **Creating a DM**: How to create a 1:1 conversation (what identifier/inbox resolution is needed?)
 4. **Creating a group**: How to create a multi-party conversation with options
 5. **Reachability check**: How to check if an address can receive XMTP messages
-6. **Address resolution**: How to resolve an Ethereum address to the SDK's identifier format
-7. **Consent state**: How to read a conversation's consent state for filtering
+6. **Address to inbox**: How to resolve an Ethereum address to the SDK's inbox identifier
+7. **Inbox to address**: How to resolve an inbox ID back to the underlying Ethereum address
+8. **Consent state**: How to read a conversation's consent state for filtering

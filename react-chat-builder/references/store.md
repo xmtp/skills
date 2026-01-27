@@ -377,8 +377,8 @@ type MessageContent =
 interface Conversation {
   id: string;
   topic: string;
-  peerAddress?: string; // For DMs
-  members?: string[];   // For groups
+  peerAddress?: string; // For DMs - resolved from inbox ID (required for ENS display)
+  members?: string[];   // For groups - resolved from inbox IDs
   name?: string;        // Group name
   lastMessageAt?: bigint;
   consentState: ConsentState;

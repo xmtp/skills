@@ -1,6 +1,6 @@
 # useIdentity Hook
 
-Resolves blockchain addresses to human-readable names and avatars via ENS or custom resolvers.
+Resolves Ethereum addresses to human-readable names and avatars via ENS or custom resolvers.
 
 ## Interface
 
@@ -17,19 +17,24 @@ function useIdentity(address: string): UseIdentityReturn;
 ## Rules
 
 **MUST:**
+- Accept Ethereum addresses (0x...), NOT XMTP inbox IDs
 - Cache resolved names in Zustand store (stable selectors per store.md)
 - Show address immediately, update when resolved (never block UI)
 - Use request token pattern to prevent stale closure bugs
+- Use wagmi's configured client when available (avoids rate-limited public endpoints)
 
 **NEVER:**
+- Pass inbox IDs to this hook (they're opaque identifiers, not resolvable via ENS)
 - Fire duplicate requests for same address (dedupe in-flight)
 - Return stale data after address prop changes
+- Create standalone viem clients for ENS resolution (reuse wagmi's client)
 
 ## Look Up
 
 Before implementing, check:
 
-1. **viem ENS utilities**: `getEnsName`, `getEnsAvatar` patterns
-2. **ENS normalization**: Import from `viem/ens` for proper address handling
-3. **Prerequisite React skill**: Request token and stale closure patterns
-4. **Existing identity patterns**: Does user's codebase have address resolution?
+1. **viem ENS utilities**: How to resolve address → name and address → avatar
+2. **ENS normalization**: Proper address/name normalization before resolution
+3. **wagmi client reuse**: How to get the configured public client from wagmi
+4. **Prerequisite React skill**: Request token and stale closure patterns
+5. **Existing identity patterns**: Does user's codebase have address resolution?
