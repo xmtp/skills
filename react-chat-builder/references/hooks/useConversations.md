@@ -45,7 +45,6 @@ Note: The interface exposes `peerAddress` (user-friendly Ethereum address). The 
 - Resolve address to inbox identifier before creating DM (SDK requires identifier, not raw address)
 - Use XMTPStreamManager pattern for streaming (connection tokens, AbortController, auto-reconnect)
 - Filter conversations by consent state before adding to store
-- Await all stream operations (they return Promises)
 - Clean up streams on unmount
 - **Stabilize array options** - Use constants or refs for default values (see below)
 - **Use `instanceof` to determine conversation type** - See mapping pattern below

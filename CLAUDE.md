@@ -42,18 +42,26 @@ interface UseXMTPReturn {
 
 ### 2. Rules
 
-Invariants that hold regardless of SDK version. Format as MUST/NEVER constraints.
+Behavioral invariants that hold regardless of SDK version. Format as MUST/NEVER constraints.
+
+**Rules describe WHAT (behaviors), not HOW (mechanisms).**
+
+Avoid mechanism words in Rules: `cursor`, `callback`, `async`, `await`, `bigint`, `enum`, specific method names. These belong in Look Up as questions, not Rules as assumptions.
 
 ```markdown
 ## Rules
 
 **MUST:**
-- Use dynamic import for SDK packages
-- Track connection with a token to handle race conditions
+- Support loading older messages on demand       ← behavior
+- Clean up streams on unmount                    ← behavior
 
 **NEVER:**
-- Import SDK types at the top level
-- Leave stale clients open
+- Show duplicate messages                        ← behavior
+- Block UI while sending                         ← behavior
+
+// ❌ BAD - mechanism-specific:
+- Support cursor-based pagination                ← assumes SDK uses cursors
+- Await stream methods (they return Promises)    ← assumes async pattern
 ```
 
 ### 3. Look Up

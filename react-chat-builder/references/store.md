@@ -24,7 +24,7 @@ interface InboxState {
   // Messages per conversation
   messages: Record<string, Record<string, Message>>;
 
-  // Pagination cursors
+  // Pagination state (stores whatever token the SDK returns for "load more")
   cursors: Record<string, string | null>;
   hasMore: Record<string, boolean>;
 
@@ -318,8 +318,9 @@ export function useSendMessage(conversationId: string) {
 
 ## Pagination
 
-Load more messages with cursor-based pagination:
+Support loading older messages on demand. The store tracks pagination state; look up the SDK's actual pagination API before implementing.
 
+**Pattern:**
 ```typescript
 // hooks/useLoadMoreMessages.ts
 export function useLoadMoreMessages(conversationId: string) {
@@ -334,15 +335,11 @@ export function useLoadMoreMessages(conversationId: string) {
     setIsLoading(true);
 
     try {
-      const PAGE_SIZE = 50;
-      const result = await conversation.messages({
-        cursor,
-        limit: PAGE_SIZE,
-        direction: 'before',
-      });
+      // Look up SDK pagination parameters - may use cursor, timestamp, or other approach
+      const result = await /* SDK pagination call - look up current API */;
 
       upsertMessages(conversationId, result.messages);
-      setCursor(conversationId, result.cursor ?? null);
+      setCursor(conversationId, result./* pagination token */ ?? null);
       setHasMore(conversationId, result.messages.length === PAGE_SIZE);
     } finally {
       setIsLoading(false);
@@ -352,6 +349,8 @@ export function useLoadMoreMessages(conversationId: string) {
   return { loadMore, isLoading, hasMore };
 }
 ```
+
+**Look up:** How to fetch older messages from a conversation (what pagination parameters does the SDK accept?)
 
 ## Types
 
