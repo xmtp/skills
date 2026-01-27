@@ -29,6 +29,10 @@ function useIdentity(address: string): UseIdentityReturn;
 - Return stale data after address prop changes
 - Create standalone viem clients for ENS resolution (reuse wagmi's client)
 
+**CORS ISSUES:**
+
+ENS resolution requires RPC calls. Default endpoints may block browser requests (CORS). If resolution fails silently or with network errors, the RPC transport likely needs configuration. Look up CORS-friendly endpoints and custom transport configuration for wagmi.
+
 ## Look Up
 
 Before implementing, check:
@@ -36,5 +40,6 @@ Before implementing, check:
 1. **viem ENS utilities**: How to resolve address → name and address → avatar
 2. **ENS normalization**: Proper address/name normalization before resolution
 3. **wagmi client reuse**: How to get the configured public client from wagmi
-4. **Prerequisite React skill**: Request token and stale closure patterns
-5. **Existing identity patterns**: Does user's codebase have address resolution?
+4. **CORS-friendly RPCs**: Which public Ethereum RPC endpoints support browser CORS
+5. **Prerequisite React skill**: Request token and stale closure patterns
+6. **Existing identity patterns**: Does user's codebase have address resolution?

@@ -44,8 +44,7 @@ export function useMessages(conversationId: string): UseMessagesReturn;
 - Implement optimistic updates for sent messages (show immediately with 'sending' status)
 - Deduplicate messages by ID (streams may deliver duplicates)
 - Use XMTPStreamManager pattern for streaming (AbortController, auto-reconnect)
-- Await stream methods (they return Promises in current SDK)
-- Support cursor-based pagination for loading older messages
+- Support loading older messages on demand (pagination)
 - Clean up streams on unmount or conversation change
 - Ensure component is wrapped with `next/dynamic` and `{ ssr: false }` in Next.js (see SKILL.md)
 - **Cache getSnapshot results** when using `useSyncExternalStore` (see below)
@@ -107,7 +106,7 @@ send() called → Create temp message (status: 'sending')
 
 Before implementing, query XMTP docs for current patterns:
 
-1. **Loading messages**: How to fetch messages from a conversation with pagination
+1. **Loading messages**: How to fetch messages from a conversation (what pagination parameters exist?)
 2. **Streaming messages**: How to subscribe to new messages in a conversation
 3. **Sending text**: How to send a plain text message
 4. **Sending attachments**: How to send file attachments (what content type package?)
