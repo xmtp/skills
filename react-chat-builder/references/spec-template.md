@@ -1,21 +1,24 @@
 # Spec Template
 
-This template defines the **structure** for the functional specification document. The spec is **generated** by pulling content from reference files based on interview answers.
+This template defines the **structure** for the functional specification document. The spec is **generated** by COPYING content from reference files based on interview answers.
 
 **Location:** `xmtp-chat-spec.md` in project root
 
 ---
 
-## Generation Instructions
+## CRITICAL: What "Generate from References" Means
 
-During Phase 3, generate the spec by:
+**DO NOT SUMMARIZE. COPY THE ACTUAL CONTENT.**
 
-1. **Read generation-matrix.md** to determine which files/references apply
-2. **Read each relevant reference file** to get behavioral contracts
-3. **Pull content from references** into the sections below
-4. **Resolve all conditionals** based on interview answers
+The spec must be **self-contained** — an AI generating code in Phase 4 reads ONLY the spec, not the reference files. If the spec lacks detail, code generation will be inconsistent.
 
-The resulting spec is **self-contained** — Phase 4 code generation reads the spec as the source of truth, not references directly.
+For each section marked `[COPY FROM reference.md]`:
+1. Open the reference file
+2. Copy the relevant sections **verbatim** (Interface, Rules, States, etc.)
+3. Paste into the spec
+4. Resolve any conditionals based on interview answers
+
+**The spec should be 3-5x longer than the example below because it contains the full content from references.**
 
 ---
 
@@ -58,149 +61,322 @@ Project: [project name from package.json]
 
 ## 2. Files to Generate
 
-[GENERATED from generation-matrix.md based on config]
+[Read generation-matrix.md, list ALL files that apply based on config]
 
 ### Base Files
 
-| File | Purpose |
-|------|---------|
-| XMTPProvider.tsx | React context for client lifecycle |
-| useXMTP.ts | Client initialization and connection state |
-| useConversations.ts | List and stream conversations |
-| useMessages.ts | Messages with send functionality |
-| inbox.ts | Zustand store for state management |
-| xmtp-streaming.ts | Stream management with reconnection |
-| xmtp.ts | TypeScript type definitions |
+| File | Path | Purpose |
+|------|------|---------|
+| XMTPProvider.tsx | src/xmtp/XMTPProvider.tsx | React context for client lifecycle |
+| useXMTP.ts | src/xmtp/hooks/useXMTP.ts | Client initialization and connection |
+| useConversations.ts | src/xmtp/hooks/useConversations.ts | List and stream conversations |
+| useMessages.ts | src/xmtp/hooks/useMessages.ts | Messages with send functionality |
+| inbox.ts | src/xmtp/store/inbox.ts | Zustand store |
+| xmtp-streaming.ts | src/xmtp/lib/xmtp-streaming.ts | Stream management |
+| xmtp.ts | src/xmtp/types/xmtp.ts | TypeScript definitions |
 
 ### Conditional Files
 
-[List only files that apply based on interview answers]
+[List EVERY file from generation-matrix.md that applies]
 
-| File | Condition | Purpose |
-|------|-----------|---------|
-| [file] | [which Q answer] | [purpose] |
-
-### Config Updates
-
-| File | Changes |
-|------|---------|
-| [bundler config] | [XMTP-specific changes needed] |
+| File | Path | Condition |
+|------|------|-----------|
+| useConversation.ts | ... | Q5 = DMs + Groups |
+| useConsent.ts | ... | Q7 = Yes |
+| ... | ... | ... |
 
 ---
 
-## 3. User Experience
+## 3. Hook Contracts
 
-[GENERATED from component references based on Q2 answer]
-
-[Only include this section if Q2 = pre-built]
-
-### ConversationList
-
-**Interface:**
-[PULL from components/ConversationList.md]
-
-**Behavior:**
-[PULL behavior description from reference]
-
-**States:**
-[PULL states from reference]
-
-**Rules:**
-[PULL MUST/NEVER rules from reference]
-
-### MessageThread
-
-[Same structure as above]
-
-### MessageComposer
-
-[Same structure as above]
-
-[Continue for each component that applies based on config]
-
----
-
-## 4. Technical Contracts
-
-[GENERATED from hook references]
+[For EACH hook, COPY the full content from the reference file]
 
 ### useXMTP
 
+[COPY FROM hooks/useXMTP.md - Include ALL of these sections:]
+
 **Interface:**
 ```typescript
-[PULL interface from hooks/useXMTP.md]
+[COPY the full TypeScript interface from the reference]
 ```
 
 **Behavior:**
-[PULL behavior description]
+[COPY the Behavior section from the reference]
 
 **Rules:**
-[PULL MUST/NEVER rules]
+
+MUST:
+[COPY all MUST rules from the reference]
+
+NEVER:
+[COPY all NEVER rules from the reference]
 
 **States:**
-[PULL states]
 
-### useConversations
-
-[Same structure]
-
-### useMessages
-
-[Same structure]
-
-[Continue for each hook that applies based on config]
+| State | Description |
+|-------|-------------|
+[COPY the states table from the reference]
 
 ---
 
-## 5. State Management
+### useConversations
 
-[GENERATED from store.md]
+[COPY FROM hooks/useConversations.md - same structure as above]
+
+**Interface:**
+```typescript
+[COPY full interface]
+```
+
+**Behavior:**
+[COPY behavior section]
+
+**Rules:**
+
+MUST:
+[COPY all MUST rules]
+
+NEVER:
+[COPY all NEVER rules]
+
+**States:**
+[COPY states]
+
+---
+
+### useMessages
+
+[COPY FROM hooks/useMessages.md - same structure]
+
+---
+
+### useConversation (if Q5 = Groups)
+
+[COPY FROM hooks/useConversation.md]
+
+---
+
+### useConsent (if Q7 = Yes)
+
+[COPY FROM hooks/useConsent.md]
+
+---
+
+### useIdentity (if Q8 = ENS or custom)
+
+[COPY FROM hooks/useIdentity.md]
+
+---
+
+## 4. State Management
+
+[COPY FROM store.md]
 
 ### Store Interface
 
 ```typescript
-[PULL interface from store.md]
+[COPY the full InboxState and InboxActions interfaces]
+```
+
+### Rules
+
+MUST:
+[COPY all MUST rules from store.md]
+
+NEVER:
+[COPY all NEVER rules from store.md]
+
+### Selector Patterns
+
+[COPY the selector guidance from store.md - the table of access patterns]
+
+---
+
+## 5. Streaming
+
+[COPY FROM xmtp-streaming.md]
+
+### Interface
+
+```typescript
+[COPY the StreamManager interface]
+```
+
+### Behavior
+
+[COPY behavior section]
+
+### Rules
+
+MUST:
+[COPY MUST rules]
+
+NEVER:
+[COPY NEVER rules]
+
+### Reconnection
+
+[COPY reconnection thresholds table]
+
+---
+
+## 6. Component Contracts (if Q2 = pre-built)
+
+[For EACH component that applies, COPY from its reference file]
+
+### ChatContainer
+
+[COPY FROM components/ChatContainer.md]
+
+**Interface:**
+```typescript
+[COPY props interface]
 ```
 
 **Rules:**
-[PULL MUST/NEVER rules]
-
-**Selector patterns:**
-[PULL selector guidance]
+[COPY UX rules - MUST and NEVER]
 
 ---
 
-## 6. Error Handling
+### ConversationList
 
-[GENERATED from error-handling.md]
+[COPY FROM components/ConversationList.md]
 
-| Error Type | User Message | Recovery Action |
-|------------|--------------|-----------------|
-| [type] | [message] | [action] |
+**Interface:**
+```typescript
+[COPY props interface]
+```
 
----
+**Rules:**
+[COPY UX rules]
 
-## 7. Identity Resolution
-
-[Only include if Q8 = ENS or custom]
-
-[GENERATED from identity-resolution.md]
-
-**Resolution chain:**
-[PULL from reference]
-
-**Caching:**
-[PULL caching behavior]
+**States:**
+[COPY states if present]
 
 ---
 
-## 8. Dependencies
+### MessageThread
+
+[COPY FROM components/MessageThread.md]
+
+---
+
+### [Continue for EVERY component from generation-matrix.md]
+
+---
+
+## 7. Error Handling
+
+[COPY FROM error-handling.md - Include ALL tables]
+
+### Connection Errors
+
+| Error | User Message | Recovery Action |
+|-------|--------------|-----------------|
+[COPY the full connection errors table]
+
+### Sending Errors
+
+| Error | User Message | Recovery Action |
+|-------|--------------|-----------------|
+[COPY the full sending errors table]
+
+### Streaming Errors
+
+| Error | User Message | Recovery Action |
+|-------|--------------|-----------------|
+[COPY the full streaming errors table]
+
+### Identity Resolution Errors
+
+| Error | User Message | Recovery Action |
+|-------|--------------|-----------------|
+[COPY the full identity errors table]
+
+### Error Boundaries
+
+[COPY the error boundaries table]
+
+### Toast Notifications
+
+[COPY the toast notifications table]
+
+---
+
+## 8. Identity Resolution (if Q8 = ENS or custom)
+
+[COPY FROM identity-resolution.md]
+
+### Resolution Chain
+
+[COPY the resolution chain section - the full flow from inboxId → address → ENS]
+
+### Caching Behavior
+
+[COPY caching section]
+
+### Display States
+
+| Resolution State | Display |
+|------------------|---------|
+[COPY the states table]
+
+### Component Usage
+
+[COPY the component usage table]
+
+---
+
+## 9. Consumer UX Requirements
+
+[COPY FROM consumer-ux-requirements.md]
+
+### Loading States
+
+MUST:
+[COPY loading MUST rules]
+
+NEVER:
+[COPY loading NEVER rules]
+
+### Error Handling
+
+MUST:
+[COPY error MUST rules]
+
+NEVER:
+[COPY error NEVER rules]
+
+### Empty States
+
+MUST:
+[COPY empty state MUST rules]
+
+### Transitions
+
+MUST:
+[COPY transition MUST rules]
+
+### Accessibility
+
+MUST:
+[COPY accessibility MUST rules]
+
+### Developer vs Consumer Patterns
+
+| Developer Pattern | Consumer Pattern |
+|-------------------|------------------|
+[COPY the full table]
+
+---
+
+## 10. Dependencies
 
 ### XMTP Packages (from Phase 0 lookup)
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| [name] | [version] | [purpose] |
+| [exact package name from docs] | [version] | [purpose] |
 
 ### Supporting Packages
 
@@ -208,11 +384,30 @@ Project: [project name from package.json]
 |---------|---------|
 | zustand | State management |
 | viem | Ethereum utilities |
-[Additional based on config]
+
+### Conditional Packages (from generation-matrix.md)
+
+[List packages based on config - wallet provider, content types, etc.]
 
 ---
 
-## 9. Verification Checklist
+## 11. Bundler Configuration
+
+[COPY FROM bundler-config.md - the section matching detected framework]
+
+### [Next.js / Vite] Configuration
+
+```typescript
+[COPY the exact config code for the framework]
+```
+
+### Troubleshooting
+
+[COPY relevant troubleshooting items]
+
+---
+
+## 12. Verification Checklist
 
 ### Build & Runtime
 - [ ] TypeScript compiles without errors
@@ -222,51 +417,62 @@ Project: [project name from package.json]
 ### Connection Flow
 - [ ] Connect wallet button visible when disconnected
 - [ ] Wallet modal opens on click
+- [ ] XMTP signature request appears
 - [ ] Client initializes after signature
 - [ ] Connection state updates correctly
 
 ### Conversations
 - [ ] Conversations load and display
 - [ ] Empty state shown when no conversations
+- [ ] Skeleton loaders during load
 - [ ] Selection updates UI correctly
-- [ ] Real-time updates work
+- [ ] Real-time updates when new conversations arrive
 
 ### Messaging
 - [ ] Messages load for selected conversation
+- [ ] Skeleton loaders during load
 - [ ] Send message works
-- [ ] Optimistic update visible
+- [ ] Optimistic update visible immediately
 - [ ] Real-time incoming messages appear
+- [ ] Failed messages show retry button
 
-[Additional checks based on config]
+[Add checks for each enabled feature: groups, attachments, reactions, replies, consent, ENS]
 
 ---
 
-## 10. Integration Notes
+## 13. Integration Notes
 
-### Provider Placement
-
-XMTPProvider wraps components using XMTP hooks:
+### Provider Hierarchy
 
 ```tsx
-<WalletProvider>
-  <XMTPProvider>
-    {/* Chat components */}
-  </XMTPProvider>
-</WalletProvider>
+[Show exact provider nesting based on wallet provider selection]
 ```
-
-### SSR Handling (Next.js)
-
-[Include if framework is Next.js]
-
-Components using XMTP wrapped with `dynamic()` and `{ ssr: false }`.
 
 ### Signer Integration
 
-[Details based on Q4 answer]
+[Details based on Q4 answer - how to get signer from wallet provider]
+
+### SSR Handling (if Next.js)
+
+[Dynamic import pattern for XMTP components]
 
 ---
 ```
+
+---
+
+## Spec Length Guideline
+
+A complete spec for a full-featured integration (all options enabled) should be approximately **800-1200 lines** because it contains:
+
+- Full TypeScript interfaces for 6+ hooks
+- MUST/NEVER rules for each hook (typically 5-10 rules each)
+- Full error handling tables (30+ error types)
+- Component contracts for 10+ components
+- Consumer UX requirements
+- Complete bundler configuration
+
+**If your spec is under 300 lines, you summarized instead of copying.**
 
 ---
 

@@ -245,6 +245,18 @@ The generation matrix is the single source of truth for:
 
 After the interview, you MUST generate a detailed specification document before writing any code. Do NOT skip this phase.
 
+### CRITICAL: Copy, Don't Summarize
+
+**The spec must be SELF-CONTAINED.** Phase 4 code generation reads ONLY the spec, not reference files. If the spec lacks detail, code generation will be inconsistent.
+
+When generating the spec:
+- **COPY full TypeScript interfaces** from reference files
+- **COPY all MUST/NEVER rules** from reference files
+- **COPY error handling tables** from error-handling.md
+- **COPY state descriptions** from reference files
+
+**A complete spec should be 800-1200 lines.** If your spec is under 300 lines, you summarized instead of copying.
+
 ### Spec Generation Flow
 
 ```
@@ -256,20 +268,22 @@ References (canonical contracts)
        ↓
    Read each relevant reference file
        ↓
-   GENERATE spec by pulling content from references
+   COPY content from references into spec (don't summarize)
        ↓
 Spec (self-contained, resolved for THIS integration)
        ↓
    Phase 4: Code Generation uses SPEC as source of truth
 ```
 
-**Key principle:** References are reusable contracts. The spec is the resolved instance for THIS integration.
-
 ### Generate the Spec
 
 1. **Read [references/generation-matrix.md](references/generation-matrix.md)** to determine which files to generate
-2. **Read each relevant reference file** to get behavioral contracts (interfaces, rules, states)
-3. **Generate `xmtp-chat-spec.md`** by pulling content from those references into the spec structure
+2. **Read each relevant reference file** and COPY:
+   - Full TypeScript interfaces
+   - All MUST/NEVER rules
+   - State tables
+   - Error handling tables
+3. **Generate `xmtp-chat-spec.md`** by assembling copied content into the spec structure
 
 The spec includes:
 - **Configuration Summary** - All interview answers resolved
