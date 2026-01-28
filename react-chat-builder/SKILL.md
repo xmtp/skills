@@ -52,6 +52,7 @@ Look up **core patterns** that apply regardless of feature selection:
 | Streaming basics | How to stream conversations and messages |
 | Sync | How to sync conversation and message history |
 | Package names | Current browser SDK and text content type packages |
+| SDK type exports | What types does the SDK export? (Client, Conversation, Message, etc.) |
 
 ### Feature-Specific Lookups (After Phase 2 Interview)
 
