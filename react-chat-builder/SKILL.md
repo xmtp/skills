@@ -255,9 +255,9 @@ Generate a signer adapter interface that the user must implement:
 | | `addresses` | Display truncated addresses only |
 | | `custom` | Generate identity resolver interface for user to implement |
 
-## Phase 3: Spec Generation
+## Phase 3: Spec Generation (REQUIRED)
 
-After the interview, generate a detailed specification document before writing any code.
+After the interview, you MUST generate a detailed specification document before writing any code. Do NOT skip this phase.
 
 ### Generate the Spec
 
@@ -274,9 +274,13 @@ Create `xmtp-chat-spec.md` in the project root with:
 
 See [references/spec-template.md](references/spec-template.md) for the full template.
 
-### Offer Review Option
+### Offer Review Option (MANDATORY)
 
-After generating the spec, ask if the user wants to review it in their editor or proceed directly to code generation.
+After generating the spec, you MUST ask the user whether to review it. Use AskUserQuestion with options:
+1. "Open in editor" - Opens the spec file for review
+2. "Continue" - Proceed directly to code generation
+
+Do NOT skip this step. The user must explicitly choose to proceed.
 
 **If "Open in editor":**
 
