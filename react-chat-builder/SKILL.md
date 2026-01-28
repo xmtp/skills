@@ -395,6 +395,12 @@ The interface is stable (we define it). The implementation adapts to current SDK
 - Match file structure and naming conventions
 - See [references/design-system-integration.md](references/design-system-integration.md)
 
+**Do NOT modify:**
+- Global stylesheets (`index.css`, `globals.css`, `App.css`) - add new files instead
+- Existing component styles - chat components should be self-contained
+- Project configuration unrelated to XMTP (eslint, prettier, tsconfig beyond strict mode)
+- Package.json scripts (except adding `--webpack` flag for Next.js 16+)
+
 ### Install Dependencies
 
 After all files are generated, install dependencies.
