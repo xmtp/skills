@@ -274,9 +274,9 @@ Create `xmtp-chat-spec.md` in the project root with:
 
 See [references/spec-template.md](references/spec-template.md) for the full template.
 
-### Offer Review Option (MANDATORY)
+### Offer Review Option
 
-After generating the spec, you MUST ask the user whether to review it. Use AskUserQuestion with options:
+After generating the spec, ask the user whether to review it. Use AskUserQuestion with options:
 1. "Open in editor" - Opens the spec file for review
 2. "Continue" - Proceed directly to code generation
 
