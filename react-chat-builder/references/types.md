@@ -2,57 +2,39 @@
 
 TypeScript type definitions for the XMTP integration.
 
+**IMPORTANT:** Most types should be re-exported from the SDK, not redefined. Only create custom types for app-specific needs (like optimistic UI state) that the SDK doesn't provide.
+
 ## Interface
 
 ```typescript
-// App-level configuration
+// Re-export SDK types (look up actual exports from docs)
+export type { Client, Conversation, DecodedMessage, /* etc */ } from '[sdk-package]';
+
+// App-level configuration (custom - not from SDK)
 interface XMTPConfig {
-  /** XMTP environment: 'dev' for testing, 'production' for mainnet */
   env: 'dev' | 'production';
-  /** Enable debug logging */
   debug?: boolean;
 }
 
-// Wrapper types for app-specific needs
-interface ConversationWithMetadata {
-  id: string;
-  /** Last message preview text */
-  lastMessagePreview?: string;
-  /** Last message timestamp */
-  lastMessageAt?: Date;
-  /** Unread message count */
-  unreadCount: number;
-  /** Whether this is a group conversation */
-  isGroup: boolean;
-  /** Display title (peer address for DMs, group name for groups) */
-  title: string;
-}
-
+// Wrapper for UI needs (extends SDK types with app-specific state)
 interface MessageWithStatus {
-  id: string;
-  content: unknown; // Content structure depends on content type
-  sentAt: Date;
-  senderAddress: string;
-  /** Sending status for optimistic updates */
-  status: 'sending' | 'sent' | 'failed';
-  /** Local ID for optimistic messages before server confirmation */
-  localId?: string;
+  message: DecodedMessage; // SDK type, not recreated
+  status: 'sending' | 'sent' | 'failed'; // App-specific optimistic state
+  localId?: string; // For optimistic messages before server confirms
 }
 ```
 
 ## Rules
 
 **MUST:**
-- Re-export SDK types from a single location for convenience
-- Create app-specific wrapper types for UI needs (metadata, status tracking)
-- Use opaque types for SDK internals - don't expose internal structure
-- Track message status for optimistic UI updates
-- Assign local IDs to optimistic messages until server confirms
+- Import and re-export SDK types (Client, Conversation, Message, etc.) - do NOT recreate them
+- Create app-specific wrapper types only for UI needs not covered by SDK (e.g., optimistic message status)
+- Look up actual SDK type exports before writing any type definitions
 
 **NEVER:**
-- Redefine SDK types - re-export them
-- Assume SDK type structure in app code - wrap and normalize
-- Hardcode content type structures - look them up
+- Define types that the SDK already exports (ConsentState, Message, Conversation, etc.)
+- Guess at type structures - look them up from docs
+- Create parallel type hierarchies that duplicate SDK types
 
 **CONDITIONAL TYPES:**
 Only include these if the corresponding feature is enabled:
