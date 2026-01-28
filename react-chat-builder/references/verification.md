@@ -109,7 +109,7 @@ agent-browser snapshot -i
 ```
 
 **Expected behavior:**
-- Wallet modal appears (RainbowKit, ConnectKit, etc.)
+- Wallet modal appears (RainbowKit, Web3Modal, etc.)
 - Or wallet extension prompt
 
 **Note:** Full wallet connection requires user interaction with wallet extension. Verify the modal/prompt appears correctly.

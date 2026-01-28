@@ -82,7 +82,7 @@ Before asking questions, detect the project configuration **and existing design 
 - Check `package.json` for framework dependencies
 
 **Wallet Provider Detection:**
-- Search for `wagmi`, `@rainbow-me/rainbowkit`, `@web3modal`, `connectkit` imports
+- Search for `wagmi`, `@rainbow-me/rainbowkit`, `@web3modal` imports
 - Check `providers/` directory for existing wallet context
 
 **Styling Detection:**
@@ -138,7 +138,7 @@ Use AskUserQuestion to gather requirements. Do NOT use "(Recommended)" labels - 
 | 1 | Chat Type | What type of chat experience are you building? | Full messaging app / Embedded feature / Chat widget |
 | 2 | Components | Pre-built UI components or hooks only? | Pre-built components / Hooks only |
 | 3 | Styling | How should the chat components be styled? | *(only if Q2 = Pre-built; see conditional options below)* |
-| 4 | Wallet | Which wallet provider? | RainbowKit / ConnectKit / Web3Modal / I'll add my own / *[Detected provider]* (if detected) |
+| 4 | Wallet | Which wallet provider? | RainbowKit / Web3Modal / I'll add my own / *[Detected provider]* (if detected) |
 | 5 | Conversations | What types of conversations? | DMs + Groups / DMs only |
 | 6 | Features | Which message features? (multiSelect) | All features / Attachments / Reactions / Replies |
 | 7 | Requests | Separate inbox for unknown senders? | Yes, separate inbox / No, show all together |
@@ -174,7 +174,7 @@ AskUserQuestion supports **max 4 questions per call**. You MUST ask questions in
 **Round 1b** (conditional, after Round 1 answers):
 - If Q2 = "Pre-built": Ask Q3 (Styling)
 - If Q2 = "Pre-built" AND component library detected: Ask Q2b (Use detected library?)
-- If Q4 = RainbowKit/ConnectKit/Web3Modal: Ask Q4b (WalletConnect project ID)
+- If Q4 = RainbowKit/Web3Modal: Ask Q4b (WalletConnect project ID)
 
 You can combine these into one call if ≤4 questions total.
 
@@ -196,11 +196,11 @@ Do NOT attempt to ask more than 4 questions at once—the tool will silently dro
 If a wallet provider was detected in Phase 1, include it as the first option with "(detected)" label:
 | Question | Options |
 |----------|---------|
-| Which wallet provider? | RainbowKit (detected) / ConnectKit / Web3Modal / I'll add my own |
+| Which wallet provider? | RainbowKit (detected) / Web3Modal / I'll add my own |
 
 This confirms the detection rather than silently skipping the question.
 
-**Q4b - WalletConnect project ID** (if Q4 = RainbowKit, ConnectKit, or Web3Modal):
+**Q4b - WalletConnect project ID** (if Q4 = RainbowKit or Web3Modal):
 | Question | Options |
 |----------|---------|
 | Do you have a WalletConnect project ID? | Yes, I have one / Skip for now / I need to get one |
@@ -234,7 +234,7 @@ Write the provided ID to env file.
 | | `default` / `unstyled` | Base UI primitives + chat-theme.css token structure |
 | | `styled` | Ask open-ended follow-up, generate cohesive theme based on direction |
 | | `something-else` | Follow user's described approach |
-| Q4 Wallet | `rainbowkit/connectkit/web3modal` | Generate wallet provider setup + ask for project ID |
+| Q4 Wallet | `rainbowkit/web3modal` | Generate wallet provider setup + ask for project ID |
 | | `own` | Generate signer adapter interface, user implements (see below) |
 
 **Q4 = "I'll add my own" handling:**
@@ -522,7 +522,7 @@ These are stable and don't require lookup:
 - `zustand` - State management
 - `viem` - Ethereum utilities (ENS resolution, address validation)
 - `@base-ui-components/react` - Unstyled components (if selected)
-- Wallet provider packages (RainbowKit, ConnectKit, etc. if selected)
+- Wallet provider packages (RainbowKit, Web3Modal, etc. if selected)
 
 ## Phase 5: Verification
 

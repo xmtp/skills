@@ -165,11 +165,10 @@ See [bundler-config.md](bundler-config.md) for full configuration examples and m
 Check for existing wallet connection setup:
 
 ```typescript
-function detectWalletProvider(): 'wagmi' | 'rainbowkit' | 'connectkit' | 'web3modal' | null {
+function detectWalletProvider(): 'wagmi' | 'rainbowkit' | 'web3modal' | null {
   // Search imports in project files
   const patterns = {
     rainbowkit: ['@rainbow-me/rainbowkit', 'RainbowKitProvider'],
-    connectkit: ['connectkit', 'ConnectKitProvider'],
     web3modal: ['@web3modal', 'Web3Modal'],
     wagmi: ['wagmi', 'WagmiConfig', 'WagmiProvider'],
   };
@@ -179,7 +178,6 @@ function detectWalletProvider(): 'wagmi' | 'rainbowkit' | 'connectkit' | 'web3mo
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
 
   if (deps['@rainbow-me/rainbowkit']) return 'rainbowkit';
-  if (deps['connectkit']) return 'connectkit';
   if (deps['@web3modal/wagmi'] || deps['@web3modal/react']) return 'web3modal';
   if (deps['wagmi']) return 'wagmi';
 

@@ -5,7 +5,6 @@ Generate wallet provider setup based on user's interview answer.
 ## Table of Contents
 - [Provider Requirements](#provider-requirements)
 - [RainbowKit Setup](#rainbowkit-setup)
-- [ConnectKit Setup](#connectkit-setup)
 - [Web3Modal Setup](#web3modal-setup)
 - [BYOW (Bring Your Own Wallet)](#byow-bring-your-own-wallet)
 
@@ -131,79 +130,6 @@ export function Providers({ children }: { children: ReactNode }) {
 ```json
 {
   "@rainbow-me/rainbowkit": "^2.x",
-  "wagmi": "^2.x",
-  "@tanstack/react-query": "^5.x",
-  "viem": "^2.x"
-}
-```
-
-## ConnectKit Setup
-
-When user selects "ConnectKit" in the interview:
-
-```typescript
-// app/providers.tsx
-'use client';
-
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { WagmiProvider, createConfig, http } from 'wagmi';
-import { ConnectKitProvider, getDefaultConfig } from 'connectkit';
-import { mainnet, sepolia } from 'wagmi/chains';
-import { type ReactNode, useState } from 'react';
-
-function MinimalProviders({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
-}
-
-export function Providers({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
-
-  const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
-
-  if (!projectId) {
-    if (typeof window !== 'undefined') {
-      console.warn(
-        '[Providers] NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID not configured. ' +
-        'Wallet connection disabled. Get a free projectId at https://cloud.walletconnect.com/'
-      );
-    }
-    return <MinimalProviders>{children}</MinimalProviders>;
-  }
-
-  const config = createConfig(
-    getDefaultConfig({
-      appName: 'XMTP Chat',
-      walletConnectProjectId: projectId,
-      chains: [mainnet, sepolia],
-      transports: {
-        [mainnet.id]: http(),
-        [sepolia.id]: http(),
-      },
-    })
-  );
-
-  return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider>
-          {children}
-        </ConnectKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
-  );
-}
-```
-
-### Dependencies for ConnectKit
-
-```json
-{
-  "connectkit": "^1.x",
   "wagmi": "^2.x",
   "@tanstack/react-query": "^5.x",
   "viem": "^2.x"
