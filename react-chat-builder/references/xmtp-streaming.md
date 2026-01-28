@@ -22,40 +22,56 @@ interface StreamManager {
 }
 ```
 
+## Behavior
+
+**Stream lifecycle:**
+- Each stream start returns a cleanup function
+- Cleanup must be called on component unmount
+- Multiple message streams can run simultaneously (one per active conversation)
+
+**Reconnection:**
+- Auto-reconnect on network disconnect
+- Exponential backoff: 1s, 2s, 4s, 8s... max 30s
+- Reset attempt counter on success
+- Stop reconnection if client disconnects
+
 ## Rules
 
 **MUST:**
 - Return cleanup function from every stream start
 - Stop streams when component unmounts
-- Deduplicate messages by ID (streams may deliver duplicates)
-- Sort messages by timestamp before displaying (order not guaranteed)
+- Deduplicate messages by ID
+- Sort messages by timestamp before displaying
 - Reconnect automatically on network disconnect
-- Use exponential backoff for reconnection: 1s, 2s, 4s, 8s... max 30s
+- Use exponential backoff for reconnection
 
 **NEVER:**
 - Create duplicate streams for the same conversation
 - Show UI indicators during reconnection (silent reconnect)
 - Block UI while reconnecting
 
-**RECONNECTION:**
-- On stream disconnect, attempt reconnection automatically
-- After max attempts (10), show toast notification to user
-- Reset attempt counter on successful reconnection
-- If client is disconnected, stop reconnection attempts
+## States
 
-**ERROR HANDLING:**
-- Network errors → trigger reconnection
-- Client closed → stop stream, don't reconnect
-- Unknown errors → log and trigger reconnection
+| Stream State | Behavior |
+|--------------|----------|
+| `connected` | Receiving real-time updates |
+| `reconnecting` | Auto-reconnecting (silent) |
+| `disconnected` | Cleanup called, no longer receiving |
+
+**Reconnection thresholds:**
+
+| Attempts | Behavior |
+|----------|----------|
+| 1-10 | Silent reconnection with backoff |
+| 10+ | Show toast notification to user |
+| Client closed | Stop reconnection attempts |
 
 ## Look Up
 
 Before implementing, query `/xmtp-docs` for:
 
-| Purpose | What to Find |
-|---------|--------------|
-| Stream conversations | How to stream new conversations in real-time |
-| Stream messages | How to stream messages for a specific conversation |
-| Stop stream | How to properly close/cancel a stream |
-| Stream events | What events/callbacks does the stream provide |
-| Stream errors | What errors can streams throw |
+1. **Stream conversations**: How to stream new conversations in real-time
+2. **Stream messages**: How to stream messages for a specific conversation
+3. **Stop stream**: How to properly close/cancel a stream
+4. **Stream events**: What events/callbacks does the stream provide
+5. **Stream errors**: What errors can streams throw

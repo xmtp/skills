@@ -29,7 +29,6 @@ Transitions:
 
 **MUST:**
 - All values use CSS custom properties (no hardcoded colors/sizes)
-- Support dark mode via `prefers-color-scheme`
 - Use 4px spacing grid for consistency
 
 **Base UI Integration (when selected):**
@@ -44,6 +43,6 @@ Transitions:
 
 Before implementing, check:
 
-1. **Base UI docs**: Query Context7 for component patterns and data attributes
+1. **Base UI docs**: Check Base UI documentation for component patterns and data attributes
 2. **Existing CSS custom properties**: Avoid naming conflicts with user's tokens
 3. **Design system**: Prerequisite web-design-guidelines skill

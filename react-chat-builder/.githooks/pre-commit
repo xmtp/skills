@@ -1,0 +1,38 @@
+#!/bin/bash
+# Pre-commit hook for react-chat-builder skill
+# Validates architecture rules before allowing commits
+
+# Always use the hook's directory to find the skill root
+# (handles monorepo case where git root != skill root)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILL_ROOT="$(dirname "$SCRIPT_DIR")"
+
+cd "$SKILL_ROOT"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+echo "Running architecture validation..."
+
+# Run the check script
+if [ -f "./scripts/check-architecture.sh" ]; then
+    if ! ./scripts/check-architecture.sh; then
+        echo ""
+        echo -e "${RED}Commit blocked: Architecture violations found${NC}"
+        echo ""
+        echo "Fix the errors above before committing."
+        echo "See CONTRIBUTING.md for architecture rules."
+        echo ""
+        echo "To bypass this check (not recommended):"
+        echo "  git commit --no-verify"
+        exit 1
+    fi
+else
+    echo -e "${RED}Warning: scripts/check-architecture.sh not found${NC}"
+    echo "Skipping architecture validation"
+fi
+
+echo -e "${GREEN}Architecture validation passed${NC}"
+exit 0

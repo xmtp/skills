@@ -1,30 +1,18 @@
-# Zustand Store Implementation
+# Zustand Store
 
 Scalable state management for XMTP chat applications.
 
-## Table of Contents
-- [Store Interface](#store-interface)
-- [Implementation](#implementation)
-- [Selectors](#selectors)
-- [Optimistic Updates](#optimistic-updates)
-- [Pagination](#pagination)
-
-## Store Interface
+## Interface
 
 ```typescript
-// stores/inbox.ts
-import { create } from 'zustand';
-import { immer } from 'zustand/middleware/immer';
-
-// Use Record<string, T> instead of Map for DevTools compatibility
 interface InboxState {
-  // Conversations
+  // Conversations (keyed by ID)
   conversations: Record<string, Conversation>;
 
-  // Messages per conversation
+  // Messages per conversation (keyed by conversation ID, then message ID)
   messages: Record<string, Record<string, Message>>;
 
-  // Pagination state (stores whatever token the SDK returns for "load more")
+  // Pagination state
   cursors: Record<string, string | null>;
   hasMore: Record<string, boolean>;
 
@@ -62,331 +50,68 @@ interface InboxActions {
 type InboxStore = InboxState & InboxActions;
 ```
 
-## Implementation
+## Behavior
 
-```typescript
-// stores/inbox.ts
-const initialState: InboxState = {
-  conversations: {},
-  messages: {},
-  cursors: {},
-  hasMore: {},
-  lastSyncedAt: null,
-  status: 'disconnected',
-};
+The store is the single source of truth for all XMTP data in the application. Components and hooks read from and write to this store.
 
-export const useInboxStore = create<InboxStore>()(
-  immer((set, get) => ({
-    ...initialState,
+**Data structures:**
+- Use `Record<string, T>` instead of `Map` for DevTools compatibility
+- Messages are nested by conversation ID for efficient per-conversation access
+- Pagination state (cursors, hasMore) is tracked per conversation
 
-    // Conversations
-    upsertConversation: (conv) => set((state) => {
-      state.conversations[conv.id] = conv;
-      // Initialize messages map if needed
-      if (!state.messages[conv.id]) {
-        state.messages[conv.id] = {};
-      }
-    }),
+**Upsert semantics:**
+- `upsertConversation` creates or updates a conversation by ID
+- `upsertMessage` creates or updates a message, also updates conversation's lastMessageAt
+- Removal operations cascade (removing conversation removes its messages, cursors, hasMore)
 
-    upsertConversations: (convs) => set((state) => {
-      for (const conv of convs) {
-        state.conversations[conv.id] = conv;
-        if (!state.messages[conv.id]) {
-          state.messages[conv.id] = {};
-        }
-      }
-    }),
+## Rules
 
-    removeConversation: (id) => set((state) => {
-      delete state.conversations[id];
-      delete state.messages[id];
-      delete state.cursors[id];
-      delete state.hasMore[id];
-    }),
+**MUST:**
+- Use immer middleware for immutable updates
+- Initialize messages map when upserting a conversation
+- Update conversation's lastMessageAt when upserting messages
+- Cascade deletes (conversation removal cleans up related state)
 
-    // Messages
-    upsertMessage: (convId, msg) => set((state) => {
-      if (!state.messages[convId]) {
-        state.messages[convId] = {};
-      }
-      state.messages[convId][msg.id] = msg;
-
-      // Update conversation's last message timestamp
-      if (state.conversations[convId]) {
-        const sentAt = BigInt(msg.sentAtNs);
-        const lastAt = state.conversations[convId].lastMessageAt;
-        if (!lastAt || sentAt > lastAt) {
-          state.conversations[convId].lastMessageAt = sentAt;
-        }
-      }
-    }),
-
-    upsertMessages: (convId, msgs) => set((state) => {
-      if (!state.messages[convId]) {
-        state.messages[convId] = {};
-      }
-      for (const msg of msgs) {
-        state.messages[convId][msg.id] = msg;
-      }
-    }),
-
-    updateMessageStatus: (convId, msgId, status) => set((state) => {
-      if (state.messages[convId]?.[msgId]) {
-        state.messages[convId][msgId].status = status;
-      }
-    }),
-
-    removeMessage: (convId, msgId) => set((state) => {
-      if (state.messages[convId]) {
-        delete state.messages[convId][msgId];
-      }
-    }),
-
-    // Pagination
-    setCursor: (convId, cursor) => set((state) => {
-      state.cursors[convId] = cursor;
-    }),
-
-    setHasMore: (convId, hasMore) => set((state) => {
-      state.hasMore[convId] = hasMore;
-    }),
-
-    // Sync
-    setLastSyncedAt: (timestamp) => set((state) => {
-      state.lastSyncedAt = timestamp;
-    }),
-
-    setStatus: (status) => set((state) => {
-      state.status = status;
-    }),
-
-    // Reset
-    reset: () => set(initialState),
-  }))
-);
-```
+**NEVER:**
+- Store derived data that can be computed from base state
+- Use Map type (breaks DevTools compatibility)
+- Mutate state directly (use immer's draft pattern)
 
 ## Selectors
 
-### Rule: Derived selectors must return stable references
+**MUST:**
+- Use `useShallow` from `zustand/react/shallow` for derived selectors
+- Define stable empty array constants for fallbacks
+- Select primitives directly when possible (stable by default)
 
-Selectors returning derived data (sorted, filtered, transformed) must not create new arrays/objects on every call—this causes infinite re-render loops with React's warning:
+**NEVER:**
+- Create new array/object references in selectors (causes infinite re-renders)
+- Use `Object.values()` or `.filter()` without `useShallow`
+- Use inline arrays in useEffect/useCallback dependencies
 
-> "The result of getSnapshot should be cached to avoid an infinite loop"
+**Selector types:**
 
-### Why This Happens
+| Access Pattern | Stability | Approach |
+|----------------|-----------|----------|
+| Primitive value | Stable | Direct selector |
+| Single item by ID | Stable if item is stable | Direct selector with fallback |
+| Derived list | Unstable without memoization | Use `useShallow` |
+| Computed object | Unstable without memoization | Use `useShallow` |
 
-Both `useSyncExternalStore` and Zustand's `useStore` call `getSnapshot`/selector on every render. If the function returns a new reference (even with identical content), React detects a "change" and re-renders, creating an infinite loop.
+## States
 
-```typescript
-// ❌ BAD: Object.values() creates new array every call
-const messages = useInboxStore(state => Object.values(state.messages[convId] ?? {}));
+| Status | Description |
+|--------|-------------|
+| `disconnected` | No XMTP client, user not connected |
+| `connecting` | Client initialization in progress |
+| `connected` | Client ready, streams active |
+| `reconnecting` | Stream lost, attempting reconnection |
+| `failed` | Connection failed, requires user action |
 
-// ❌ BAD: .filter() creates new array every call
-const allowed = useInboxStore(state =>
-  Object.values(state.conversations).filter(c => c.consentState === 'allowed')
-);
+## Look Up
 
-// ❌ BAD: Spread creates new object every call
-const pagination = useInboxStore(state => ({
-  cursor: state.cursors[convId],
-  hasMore: state.hasMore[convId]
-}));
-```
+Before implementing, query XMTP docs for:
 
-### Solution: Use useShallow or Memoized Selectors
-
-```typescript
-import { useShallow } from 'zustand/react/shallow';
-
-// ✅ GOOD: useShallow does shallow comparison, prevents re-render if values equal
-const messages = useInboxStore(
-  useShallow(state => Object.values(state.messages[convId] ?? {}))
-);
-
-// ✅ GOOD: useShallow with object
-const pagination = useInboxStore(
-  useShallow(state => ({
-    cursor: state.cursors[convId] ?? null,
-    hasMore: state.hasMore[convId] ?? true
-  }))
-);
-
-// ✅ GOOD: Select primitive directly (no transformation)
-const status = useInboxStore(state => state.status);
-
-// ✅ GOOD: Select by ID returns stable reference if object is stable
-const conversation = useInboxStore(state => state.conversations[id] ?? null);
-```
-
-### Alternative: Pre-compute in Store
-
-Structure the store so derived data is pre-computed on write, not computed on read:
-
-```typescript
-// Instead of filtering conversations by consent on read,
-// maintain separate indexes updated on write
-interface InboxState {
-  conversations: Record<string, Conversation>;
-  // Pre-computed indexes
-  conversationIdsByConsent: Record<ConsentState, string[]>;
-}
-```
-
-### Interface
-
-```typescript
-// stores/selectors.ts
-import { useShallow } from 'zustand/react/shallow';
-
-// Primitives: direct selectors are fine
-export const useConnectionStatus = () => useInboxStore(state => state.status);
-
-// Single item by ID: stable if item reference is stable
-export const useConversation = (id: string) => useInboxStore(
-  state => state.conversations[id] ?? null
-);
-
-// Derived data: MUST use useShallow
-export const useMessages = (convId: string) => useInboxStore(
-  useShallow(state => Object.values(state.messages[convId] ?? {}))
-);
-
-export const useSortedConversations = () => useInboxStore(
-  useShallow(state =>
-    Object.values(state.conversations).sort((a, b) =>
-      Number((b.lastMessageAt ?? 0n) - (a.lastMessageAt ?? 0n))
-    )
-  )
-);
-
-export const usePagination = (convId: string) => useInboxStore(
-  useShallow(state => ({
-    cursor: state.cursors[convId] ?? null,
-    hasMore: state.hasMore[convId] ?? true
-  }))
-);
-```
-
-## Optimistic Updates
-
-Update UI immediately, rollback on error:
-
-```typescript
-// hooks/useSendMessage.ts
-export function useSendMessage(conversationId: string) {
-  const { upsertMessage, updateMessageStatus, removeMessage } = useInboxStore();
-  const conversation = useConversation(conversationId);
-
-  const send = async (content: string) => {
-    if (!conversation) return;
-
-    // Create optimistic message
-    const tempId = crypto.randomUUID();
-    const optimisticMessage: Message = {
-      id: tempId,
-      conversationId,
-      senderInboxId: 'self', // Will be replaced
-      content: { type: 'text', text: content },
-      sentAtNs: BigInt(Date.now() * 1_000_000).toString(),
-      status: 'sending',
-    };
-
-    // Optimistic update
-    upsertMessage(conversationId, optimisticMessage);
-
-    try {
-      // Send via XMTP
-      const realMessage = await conversation.send(content);
-
-      // Replace optimistic with real
-      removeMessage(conversationId, tempId);
-      upsertMessage(conversationId, {
-        ...realMessage,
-        status: 'sent',
-      });
-    } catch (error) {
-      // Mark as failed (don't remove - let user retry)
-      updateMessageStatus(conversationId, tempId, 'failed');
-      throw error;
-    }
-  };
-
-  return { send };
-}
-```
-
-## Pagination
-
-Support loading older messages on demand. The store tracks pagination state; look up the SDK's actual pagination API before implementing.
-
-**Pattern:**
-```typescript
-// hooks/useLoadMoreMessages.ts
-export function useLoadMoreMessages(conversationId: string) {
-  const { upsertMessages, setCursor, setHasMore } = useInboxStore();
-  const { cursor, hasMore } = usePagination(conversationId);
-  const conversation = useConversation(conversationId);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const loadMore = async () => {
-    if (!conversation || !hasMore || isLoading) return;
-
-    setIsLoading(true);
-
-    try {
-      // Look up SDK pagination parameters - may use cursor, timestamp, or other approach
-      const result = await /* SDK pagination call - look up current API */;
-
-      upsertMessages(conversationId, result.messages);
-      setCursor(conversationId, result./* pagination token */ ?? null);
-      setHasMore(conversationId, result.messages.length === PAGE_SIZE);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return { loadMore, isLoading, hasMore };
-}
-```
-
-**Look up:** How to fetch older messages from a conversation (what pagination parameters does the SDK accept?)
-
-## Types
-
-```typescript
-// types/xmtp.ts
-type MessageStatus = 'sending' | 'sent' | 'failed';
-
-interface Message {
-  id: string;
-  conversationId: string;
-  senderInboxId: string;
-  content: MessageContent;
-  sentAtNs: string;
-  status?: MessageStatus;
-}
-
-type MessageContent =
-  | { type: 'text'; text: string }
-  | { type: 'attachment'; url: string; mimeType: string; filename: string }
-  | { type: 'reaction'; emoji: string; referenceId: string }
-  | { type: 'reply'; referenceId: string; content: MessageContent };
-
-interface Conversation {
-  id: string;
-  topic: string;
-  peerAddress?: string; // For DMs - resolved from inbox ID (required for ENS display)
-  members?: string[];   // For groups - resolved from inbox IDs
-  name?: string;        // Group name
-  lastMessageAt?: bigint;
-  consentState: ConsentState;
-  isGroup: boolean;
-}
-
-enum ConsentState {
-  Unknown = 'unknown',
-  Allowed = 'allowed',
-  Denied = 'denied',
-}
-```
+1. **Message structure**: What fields does a decoded message have?
+2. **Conversation structure**: What properties does a conversation have?
+3. **Pagination**: What cursor/token does the SDK use for pagination?

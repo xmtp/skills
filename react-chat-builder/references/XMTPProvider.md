@@ -18,44 +18,58 @@ interface XMTPContextValue {
   disconnect: () => Promise<void>;
 }
 
-// Client type is intentionally opaque - consumers only need these properties
+// Client type is intentionally opaque
 type Client = { inboxId: string };
 ```
+
+## Behavior
+
+**Initialization:**
+- Client created lazily on `connect()` call, NOT on mount
+- Signer obtained from wallet provider context
+- Single client instance enforced per app
+
+**Disconnection:**
+- Stops all active streams
+- Closes client connection
+- Clears client reference (OPFS data persists)
+
+**Wallet integration:**
+- Listens for wallet account changes
+- If account changes while connected: disconnect and prompt reconnect
+- If wallet disconnects: set error state, clear client
 
 ## Rules
 
 **MUST:**
 - Enforce single client instance per app
-- Initialize client lazily (on `connect()` call, not on mount)
-- Get signer from wallet provider context (wagmi, ethers, etc.)
-- Clean up streams and close client on `disconnect()`
-- Capture errors in state, not throw - let components handle gracefully
-- Render safely on server (client initialization browser-only)
+- Initialize client lazily (on connect, not mount)
+- Get signer from wallet provider context
+- Clean up streams and close client on disconnect
+- Capture errors in state (don't throw)
+- Render safely on server
 
 **NEVER:**
 - Create client on provider mount
 - Leave orphaned clients when user switches accounts
-- Expose raw SDK errors - normalize to standard Error type
+- Expose raw SDK errors
 - Log sensitive data (keys, signatures)
 
-**PERSISTENCE:**
-- Client persists messages in OPFS (Origin Private File System)
-- Same wallet address = same message history across sessions
-- OPFS data persists after `disconnect()` - only client reference is cleared
+## States
 
-**WALLET INTEGRATION:**
-- Listen for wallet account changes
-- If account changes while connected, disconnect and prompt to reconnect
-- If wallet disconnects, set error state and clear client
+| State | Description |
+|-------|-------------|
+| `client: null, isConnecting: false` | Ready to connect |
+| `client: null, isConnecting: true` | Wallet signature pending |
+| `client: present, isConnected: true` | Connected, ready for operations |
+| `error: present` | Connection failed |
 
 ## Look Up
 
 Before implementing, query `/xmtp-docs` for:
 
-| Purpose | What to Find |
-|---------|--------------|
-| Create client | How to create an XMTP client with a signer |
-| Client options | How to configure database path, environment (dev/production), logging |
-| Close client | How to properly close/cleanup a client |
-| Check registration | How to check if an address is registered on XMTP network |
-| Signer interface | Current structure for EOA signers |
+1. **Create client**: How to create an XMTP client with a signer
+2. **Client options**: How to configure database path, environment, logging
+3. **Close client**: How to properly close/cleanup a client
+4. **Check registration**: How to check if address is registered on XMTP
+5. **Signer interface**: Current structure for EOA signers

@@ -15,6 +15,10 @@ description: >
 
 Build consumer-grade encrypted messaging for any React application through an interactive workflow.
 
+> **Architecture Note:** This skill uses a 3-layer architecture (SKILL.md → references → spec).
+> Before modifying, read [CONTRIBUTING.md](CONTRIBUTING.md) to understand layer responsibilities.
+> Each piece of information lives in exactly ONE place.
+
 ## Workflow Overview
 
 This skill follows a 6-phase execution focused on producing **consumer-grade** output:
@@ -53,6 +57,7 @@ Look up **core patterns** that apply regardless of feature selection:
 | Sync | How to sync conversation and message history |
 | Package names | Current browser SDK and text content type packages |
 | SDK type exports | What types does the SDK export? (Client, Conversation, Message, etc.) |
+| Identity resolution | How to get Ethereum address from inboxId (for displaying participant names) |
 
 ### Feature-Specific Lookups (After Phase 2 Interview)
 
@@ -61,10 +66,12 @@ After interview determines which features are needed, look up those specific pat
 | If Selected | What to find |
 |-------------|--------------|
 | Q5 = Groups | How to create and manage group chats |
+| Q5 = Groups | How to detect and display group system messages (member added/removed, etc.) |
 | Q6 = Attachments | Attachment content type package and usage |
 | Q6 = Reactions | Reaction content type package and usage |
 | Q6 = Replies | Reply content type package and usage |
 | Q7 = Requests | How to handle consent state and spam filtering |
+| Q8 = ENS | How to resolve ENS names and avatars using viem |
 
 ### Look Up Each Purpose
 
@@ -222,58 +229,58 @@ Write the provided ID to env file.
 |----------|---------|
 | What identity system? | Lens Protocol / Farcaster / (Other for custom) |
 
-### Answer Effects
+### Generation Effects
 
-| Question | Answer | Generation Effect |
-|----------|--------|-------------------|
-| Q1 Chat Type | `full-app` | Generate FullAppLayout with routing, navigation, responsive design |
-| | `embedded-feature` | Generate ChatEmbed component - self-contained, drops into any page, no layout wrapper |
-| | `widget` | Generate WidgetLayout - floating overlay with toggle button, minimized state |
-| Q2 Components | `pre-built` | Generate UI components in chat subdirectory (see File Path Resolution), ask Q3 (Styling) |
-| | `hooks-only` | Only generate hooks and store, no UI, skip Q3 |
-| Q3 Styling | `match-app` | Reuse existing components, tokens, patterns |
-| | `default` / `unstyled` | Base UI primitives + chat-theme.css token structure |
-| | `styled` | Ask open-ended follow-up, generate cohesive theme based on direction |
-| | `something-else` | Follow user's described approach |
-| Q4 Wallet | `rainbowkit/web3modal` | Generate wallet provider setup + ask for project ID |
-| | `own` | Generate signer adapter interface, user implements (see below) |
+Interview answers determine which files are generated and which reference contracts apply.
 
-**Q4 = "I'll add my own" handling:**
+**See [references/generation-matrix.md](references/generation-matrix.md) for the complete mapping of answers to files.**
 
-Generate a signer adapter interface that the user must implement:
-- Interface defines what XMTPProvider needs: `getSigner()` returning the signer shape
-- Document the required signer shape (look up current shape in Phase 0)
-- User connects their wallet solution to this interface
-- XMTPProvider calls the adapter, doesn't care about underlying wallet provider
-| Q5 Conversations | `dms-groups` | Generate group management features (useConversation hook) |
-| | `dms-only` | Skip group features, simpler implementation |
-| Q6 Features | `attachments` | Install attachment content type, add file picker |
-| | `reactions` | Install reaction content type, add reaction UI |
-| | `replies` | Install reply content type, add reply threading |
-| Q7 Requests | `yes` | Generate tabbed inbox (Conversations / Requests) |
-| | `no` | Single conversation list, no consent filtering UI |
-| Q8 Identity | `ens` | Add ENS resolution with viem |
-| | `addresses` | Display truncated addresses only |
-| | `custom` | Generate identity resolver interface for user to implement |
+The generation matrix is the single source of truth for:
+- Base files (always generated)
+- Conditional files (based on each question's answer)
+- Dependencies to install
+- Which reference files apply to this integration
 
 ## Phase 3: Spec Generation (REQUIRED)
 
 After the interview, you MUST generate a detailed specification document before writing any code. Do NOT skip this phase.
 
+### Spec Generation Flow
+
+```
+References (canonical contracts)
+       ↓
+   Read generation-matrix.md
+       ↓
+   Determine which files/references apply based on interview config
+       ↓
+   Read each relevant reference file
+       ↓
+   GENERATE spec by pulling content from references
+       ↓
+Spec (self-contained, resolved for THIS integration)
+       ↓
+   Phase 4: Code Generation uses SPEC as source of truth
+```
+
+**Key principle:** References are reusable contracts. The spec is the resolved instance for THIS integration.
+
 ### Generate the Spec
 
-Create `xmtp-chat-spec.md` in the project root with:
+1. **Read [references/generation-matrix.md](references/generation-matrix.md)** to determine which files to generate
+2. **Read each relevant reference file** to get behavioral contracts (interfaces, rules, states)
+3. **Generate `xmtp-chat-spec.md`** by pulling content from those references into the spec structure
 
-1. **Configuration Summary** - All interview answers in a table
-2. **Detected Project Structure** - Framework, styling, directories, existing patterns
-3. **Files to Generate** - Exact file paths for every hook, component, and config change
-4. **Dependencies** - Exact npm packages to install (from Phase 0 lookup)
-5. **Interface Contracts** - TypeScript interfaces for all hooks
-6. **Component Props** - Props interfaces for all components (if pre-built)
-7. **Config Changes** - Exact bundler config additions as diffs
-8. **Verification Checklist** - What will be tested after generation
+The spec includes:
+- **Configuration Summary** - All interview answers resolved
+- **Detected Project Structure** - Framework, styling, directories, existing patterns
+- **Files to Generate** - From generation-matrix.md based on config
+- **User Experience** - Component behaviors pulled from relevant references
+- **Technical Contracts** - Hook interfaces pulled from relevant references
+- **Dependencies** - From generation-matrix.md + Phase 0 lookups
+- **Verification Checklist** - What will be tested after generation
 
-See [references/spec-template.md](references/spec-template.md) for the full template.
+See [references/spec-template.md](references/spec-template.md) for the spec structure.
 
 ### Offer Review Option
 
@@ -302,7 +309,9 @@ Proceed directly to Phase 4 (Code Generation).
 
 ## Phase 4: Code Generation
 
-Generate files based on interview answers. Match project's existing directory structure **and design system**.
+Generate files based on the **spec document** (not references directly). The spec is the resolved source of truth for this integration.
+
+Match project's existing directory structure **and design system**.
 
 ### File Path Resolution
 

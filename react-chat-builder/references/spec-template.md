@@ -1,256 +1,285 @@
 # Spec Template
 
-This template is used to generate a detailed implementation spec after the interview phase. The spec documents exactly what will be generated before any code is written.
+This template defines the **structure** for the functional specification document. The spec is **generated** by pulling content from reference files based on interview answers.
+
+**Location:** `xmtp-chat-spec.md` in project root
+
+---
+
+## Generation Instructions
+
+During Phase 3, generate the spec by:
+
+1. **Read generation-matrix.md** to determine which files/references apply
+2. **Read each relevant reference file** to get behavioral contracts
+3. **Pull content from references** into the sections below
+4. **Resolve all conditionals** based on interview answers
+
+The resulting spec is **self-contained** — Phase 4 code generation reads the spec as the source of truth, not references directly.
+
+---
 
 ## Template Structure
 
-Generate the spec as a markdown file in the project root: `xmtp-chat-spec.md`
-
 ```markdown
-# XMTP Chat Integration Spec
+# XMTP Chat Integration — Functional Specification
 
 Generated: [timestamp]
+Project: [project name from package.json]
 
-## Configuration Summary
+---
 
-| Setting | Value |
-|---------|-------|
-| Chat Type | [full-app / embedded / widget] |
-| Components | [pre-built / hooks-only] |
-| Styling | [match-app / unstyled / styled / custom] |
-| Wallet Provider | [detected or selected] |
-| Conversations | [dms-groups / dms-only] |
-| Features | [list selected: text, attachments, reactions, replies] |
-| Requests Inbox | [yes / no] |
-| Identity | [ens / addresses / custom] |
+## 1. Configuration
 
-## Detected Project Structure
+### 1.1 Interview Answers
 
-| Detection | Result |
-|-----------|--------|
-| Framework | [Next.js (app router) / Next.js (pages) / Vite / CRA] |
-| Next.js Version | [version if applicable, note if 16+ for --webpack flag] |
-| Styling System | [Tailwind / CSS Modules / styled-components / emotion] |
-| Design System | [detected components and tokens, or "none detected"] |
-| Wallet Provider | [existing provider or "none detected"] |
-| Source Directory | [src/ or root] |
-| Components Directory | [path] |
-| Hooks Directory | [path] |
+| Question | Answer |
+|----------|--------|
+| Q1: Chat Type | [value] |
+| Q2: Components | [pre-built / hooks-only] |
+| Q3: Styling | [value] |
+| Q4: Wallet Provider | [value] |
+| Q5: Conversation Types | [DMs only / DMs + Groups] |
+| Q6: Message Features | [list] |
+| Q7: Request Filtering | [yes / no] |
+| Q8: Identity Display | [ENS / addresses / custom] |
 
-## Files to Generate
+### 1.2 Project Context
 
-### Core Files (Always Generated)
+| Aspect | Details |
+|--------|---------|
+| Framework | [detected framework and router] |
+| Styling System | [detected styling approach] |
+| Design System | [detected components/tokens or "none"] |
+| Wallet Integration | [detected provider or "to be added"] |
+| Source Structure | [directory organization] |
 
-| File | Path | Purpose |
-|------|------|---------|
-| XMTPProvider.tsx | [detected path]/providers/XMTPProvider.tsx | Context provider with client initialization |
-| useXMTP.ts | [detected path]/hooks/useXMTP.ts | Core hook for client state |
-| useConversations.ts | [detected path]/hooks/useConversations.ts | List and stream conversations |
-| useMessages.ts | [detected path]/hooks/useMessages.ts | Messages with send functionality |
-| inbox.ts | [detected path]/stores/inbox.ts | Zustand store for state management |
-| xmtp-streaming.ts | [detected path]/lib/xmtp-streaming.ts | Stream management with reconnection |
-| xmtp.ts | [detected path]/types/xmtp.ts | TypeScript types |
-| .env.example | .env.example | Environment configuration |
+---
 
-### Conditional Hooks
+## 2. Files to Generate
 
-[Only list if applicable based on interview answers]
+[GENERATED from generation-matrix.md based on config]
 
-| File | Path | Condition |
-|------|------|-----------|
-| useConversation.ts | [path] | Groups enabled (Q5 = DMs + Groups) |
-| useIdentity.ts | [path] | ENS or custom identity (Q8) |
-| useConsent.ts | [path] | Requests inbox enabled (Q7 = Yes) |
+### Base Files
 
-### Conditional Components
+| File | Purpose |
+|------|---------|
+| XMTPProvider.tsx | React context for client lifecycle |
+| useXMTP.ts | Client initialization and connection state |
+| useConversations.ts | List and stream conversations |
+| useMessages.ts | Messages with send functionality |
+| inbox.ts | Zustand store for state management |
+| xmtp-streaming.ts | Stream management with reconnection |
+| xmtp.ts | TypeScript type definitions |
 
-[Only list if Q2 = Pre-built]
+### Conditional Files
 
-| File | Path | Condition |
-|------|------|-----------|
-| ChatContainer.tsx | [path] | Always (when pre-built) |
-| ConversationList.tsx | [path] | Always (when pre-built) |
-| MessageThread.tsx | [path] | Always (when pre-built) |
-| NewChatDialog.tsx | [path] | Always (when pre-built) |
-| StatusToast.tsx | [path] | Always (when pre-built) |
-| LoadingSkeletons.tsx | [path] | Always (when pre-built) |
-| EmptyStates.tsx | [path] | Always (when pre-built) |
-| IdentityBadge.tsx | [path] | ENS or custom identity |
-| RequestsInbox.tsx | [path] | Requests inbox enabled |
-| GroupManagement.tsx | [path] | Groups enabled |
-| FilePicker.tsx | [path] | Attachments enabled |
-| ReactionPicker.tsx | [path] | Reactions enabled |
-| ReplyComposer.tsx | [path] | Replies enabled |
+[List only files that apply based on interview answers]
 
-### Layouts
+| File | Condition | Purpose |
+|------|-----------|---------|
+| [file] | [which Q answer] | [purpose] |
 
-[Only list if Q2 = Pre-built]
+### Config Updates
 
-| File | Path | Condition |
-|------|------|-----------|
-| FullAppLayout.tsx | [path] | Q1 = Full messaging app |
-| WidgetLayout.tsx | [path] | Q1 = Chat widget |
+| File | Changes |
+|------|---------|
+| [bundler config] | [XMTP-specific changes needed] |
 
-### Styling
+---
 
-| File | Path | Condition |
-|------|------|-----------|
-| chat-theme.css | [path] | Q3 = unstyled or styled |
+## 3. User Experience
 
-## Config Changes
+[GENERATED from component references based on Q2 answer]
 
-### Bundler Configuration
-
-**File:** [next.config.ts / vite.config.ts]
-
-**Changes Required:**
-- [ ] WASM experiments enabled
-- [ ] Worker configuration
-- [ ] CORS headers (Next.js)
-- [ ] External packages (Next.js)
-
-[Show exact diff/additions needed]
-
-### Package.json Scripts
-
-[Only for Next.js 16+]
-
-**Changes Required:**
-- [ ] Add `--webpack` to dev script
-- [ ] Add `--webpack` to build script
-
-```diff
-- "dev": "next dev",
-+ "dev": "next dev --webpack",
-- "build": "next build",
-+ "build": "next build --webpack",
-```
-
-## Dependencies to Install
-
-### XMTP Packages
-
-[List exact package names from /xmtp-docs lookup]
-
-```bash
-npm install [packages]
-```
-
-### Additional Packages
-
-```bash
-npm install zustand viem
-```
-
-[Add wallet provider packages if selected]
-[Add @base-ui-components/react if unstyled selected]
-
-## Interface Contracts
-
-### useXMTP Hook
-
-```typescript
-interface UseXMTPReturn {
-  client: Client | null;
-  isConnecting: boolean;
-  isConnected: boolean;
-  error: Error | null;
-  connect: () => Promise<void>;
-  disconnect: () => Promise<void>;
-}
-```
-
-### useConversations Hook
-
-```typescript
-interface UseConversationsReturn {
-  conversations: Conversation[];
-  isLoading: boolean;
-  error: Error | null;
-  refresh: () => Promise<void>;
-}
-```
-
-### useMessages Hook
-
-```typescript
-interface UseMessagesReturn {
-  messages: Message[];
-  isLoading: boolean;
-  isSending: boolean;
-  error: Error | null;
-  sendMessage: (content: string) => Promise<void>;
-  loadMore: () => Promise<void>;
-  hasMore: boolean;
-}
-```
-
-[Include additional hook interfaces based on selections]
-
-## Component Props
-
-[Only if Q2 = Pre-built]
-
-### ChatContainer
-
-```typescript
-interface ChatContainerProps {
-  className?: string;
-  children?: React.ReactNode;
-}
-```
+[Only include this section if Q2 = pre-built]
 
 ### ConversationList
 
+**Interface:**
+[PULL from components/ConversationList.md]
+
+**Behavior:**
+[PULL behavior description from reference]
+
+**States:**
+[PULL states from reference]
+
+**Rules:**
+[PULL MUST/NEVER rules from reference]
+
+### MessageThread
+
+[Same structure as above]
+
+### MessageComposer
+
+[Same structure as above]
+
+[Continue for each component that applies based on config]
+
+---
+
+## 4. Technical Contracts
+
+[GENERATED from hook references]
+
+### useXMTP
+
+**Interface:**
 ```typescript
-interface ConversationListProps {
-  onSelect: (conversationId: string) => void;
-  selectedId?: string;
-}
+[PULL interface from hooks/useXMTP.md]
 ```
 
-[Include additional component props based on selections]
+**Behavior:**
+[PULL behavior description]
 
-## Verification Checklist
+**Rules:**
+[PULL MUST/NEVER rules]
 
-After generation, these will be verified:
+**States:**
+[PULL states]
 
-- [ ] `npm install` completes without errors
-- [ ] `npm run dev` starts without WASM/worker errors
+### useConversations
+
+[Same structure]
+
+### useMessages
+
+[Same structure]
+
+[Continue for each hook that applies based on config]
+
+---
+
+## 5. State Management
+
+[GENERATED from store.md]
+
+### Store Interface
+
+```typescript
+[PULL interface from store.md]
+```
+
+**Rules:**
+[PULL MUST/NEVER rules]
+
+**Selector patterns:**
+[PULL selector guidance]
+
+---
+
+## 6. Error Handling
+
+[GENERATED from error-handling.md]
+
+| Error Type | User Message | Recovery Action |
+|------------|--------------|-----------------|
+| [type] | [message] | [action] |
+
+---
+
+## 7. Identity Resolution
+
+[Only include if Q8 = ENS or custom]
+
+[GENERATED from identity-resolution.md]
+
+**Resolution chain:**
+[PULL from reference]
+
+**Caching:**
+[PULL caching behavior]
+
+---
+
+## 8. Dependencies
+
+### XMTP Packages (from Phase 0 lookup)
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| [name] | [version] | [purpose] |
+
+### Supporting Packages
+
+| Package | Purpose |
+|---------|---------|
+| zustand | State management |
+| viem | Ethereum utilities |
+[Additional based on config]
+
+---
+
+## 9. Verification Checklist
+
+### Build & Runtime
 - [ ] TypeScript compiles without errors
-- [ ] App renders in browser without console errors
-- [ ] XMTP components are visible
-- [ ] Wallet connection button works
-- [ ] XMTP client connects successfully
-- [ ] Conversations load (if existing messages)
-- [ ] New message can be sent
+- [ ] Dev server starts without WASM/worker errors
+- [ ] No console errors on initial load
 
-## Notes
+### Connection Flow
+- [ ] Connect wallet button visible when disconnected
+- [ ] Wallet modal opens on click
+- [ ] Client initializes after signature
+- [ ] Connection state updates correctly
 
-[Any additional context, warnings, or considerations]
+### Conversations
+- [ ] Conversations load and display
+- [ ] Empty state shown when no conversations
+- [ ] Selection updates UI correctly
+- [ ] Real-time updates work
+
+### Messaging
+- [ ] Messages load for selected conversation
+- [ ] Send message works
+- [ ] Optimistic update visible
+- [ ] Real-time incoming messages appear
+
+[Additional checks based on config]
+
+---
+
+## 10. Integration Notes
+
+### Provider Placement
+
+XMTPProvider wraps components using XMTP hooks:
+
+```tsx
+<WalletProvider>
+  <XMTPProvider>
+    {/* Chat components */}
+  </XMTPProvider>
+</WalletProvider>
 ```
 
-## Usage in SKILL.md
+### SSR Handling (Next.js)
 
-After the interview phase completes:
+[Include if framework is Next.js]
 
-1. Generate the spec using detected values and interview answers
-2. Save to `xmtp-chat-spec.md` in project root
-3. Ask user if they want to review it:
+Components using XMTP wrapped with `dynamic()` and `{ ssr: false }`.
 
-```
-AskUserQuestion:
-- Question: "I've generated a detailed spec. Want to review it before I start coding?"
-- Header: "Spec"
-- Options:
-  1. "Open in editor" - Opens xmtp-chat-spec.md for review
-  2. "Continue" - Proceed directly to code generation
+### Signer Integration
+
+[Details based on Q4 answer]
+
+---
 ```
 
-If "Open in editor":
-- Run: `code xmtp-chat-spec.md` (or detected editor)
-- Tell user: "Review the spec. When ready, say 'continue' to start generation."
-- Wait for user to say "continue" before proceeding
+---
 
-If "Continue":
-- Proceed directly to Phase 3 (Generation)
+## Spec Review Flow
+
+After generating the spec:
+
+1. **Save to `xmtp-chat-spec.md`** in project root
+2. **Ask user** whether to review:
+   - "Open in editor" → Open file, wait for "continue"
+   - "Continue" → Proceed to Phase 4
+
+If user requests changes:
+1. Update the spec file
+2. Summarize changes
+3. Wait for "continue"

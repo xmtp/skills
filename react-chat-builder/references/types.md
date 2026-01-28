@@ -32,42 +32,71 @@ interface MessageWithStatus {
   id: string;
   content: unknown; // Content structure depends on content type
   sentAt: Date;
-  senderAddress: string;
+  senderInboxId: string;
+  /** Message type determines rendering strategy */
+  type: 'text' | 'system' | 'attachment' | 'reaction' | 'reply';
   /** Sending status for optimistic updates */
   status: 'sending' | 'sent' | 'failed';
   /** Local ID for optimistic messages before server confirmation */
   localId?: string;
 }
+
+/** System messages represent group events, not user-sent content */
+interface SystemMessage {
+  id: string;
+  type: 'system';
+  event: 'member_added' | 'member_removed' | 'member_left' | 'group_renamed' | 'group_created';
+  /** Who performed the action (inboxId) */
+  actorInboxId?: string;
+  /** Who was affected (inboxId) - for add/remove events */
+  targetInboxId?: string;
+  /** Additional metadata (e.g., new group name) */
+  metadata?: string;
+  sentAt: Date;
+}
+
+/** Cached identity resolution result */
+interface ResolvedIdentity {
+  address: string;
+  ensName: string | null;
+  avatar: string | null;
+  resolvedAt: number;
+}
 ```
+
+## Behavior
+
+**Wrapper types:**
+- App-specific types wrap SDK types with additional metadata
+- Status tracking enables optimistic UI updates
+- Local IDs track optimistic messages until confirmed
+
+**System messages:**
+- Represent group events, not user content
+- Rendered differently (centered, no avatar)
+- Actor and target resolved through identity chain
 
 ## Rules
 
 **MUST:**
-- Re-export SDK types from a single location for convenience
-- Create app-specific wrapper types for UI needs (metadata, status tracking)
-- Use opaque types for SDK internals - don't expose internal structure
-- Track message status for optimistic UI updates
-- Assign local IDs to optimistic messages until server confirms
+- Re-export SDK types from a single location
+- Create app-specific wrapper types for UI needs
+- Use opaque types for SDK internals
+- Track message status for optimistic updates
+- Assign local IDs to optimistic messages
 
 **NEVER:**
-- Redefine SDK types - re-export them
-- Assume SDK type structure in app code - wrap and normalize
-- Hardcode content type structures - look them up
-
-**CONDITIONAL TYPES:**
-Only include these if the corresponding feature is enabled:
-- Attachment types (if Q6 includes attachments)
-- Reaction types (if Q6 includes reactions)
-- Reply types (if Q6 includes replies)
+- Redefine SDK types (re-export them)
+- Assume SDK type structure in app code
+- Hardcode content type structures
+- Store addresses when SDK provides inboxIds
 
 ## Look Up
 
 Before implementing, query `/xmtp-docs` for:
 
-| Purpose | What to Find |
-|---------|--------------|
-| SDK exports | What types does the browser SDK export? Package name? |
-| Message structure | What properties does a decoded message have? |
-| Conversation structure | What properties does a conversation have? Group vs DM? |
-| Content types | Type structures for attachment, reaction, reply content types |
-| Identifier types | How are addresses/identifiers structured? |
+1. **SDK exports**: What types does the browser SDK export? Package name?
+2. **Message structure**: What properties does a decoded message have?
+3. **Conversation structure**: What properties does a conversation have?
+4. **Content types**: Type structures for attachment, reaction, reply
+5. **Identifier types**: How are addresses/identifiers structured?

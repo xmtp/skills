@@ -25,7 +25,6 @@ interface MessageSkeletonProps {
 - Match final layout dimensions, spacing, and structure
 - Use subtle pulse animation (1.5s ease-in-out)
 - Vary message skeleton widths for realistic appearance
-- Support dark mode with appropriate colors
 - Respect `prefers-reduced-motion` (disable animation)
 
 **NEVER:**
@@ -59,5 +58,4 @@ Before implementing, check user's codebase for:
 1. **Existing skeleton components**: Does app have skeleton loaders?
 2. **Animation utilities**: Tailwind animate-pulse or custom keyframes?
 3. **Color tokens**: What colors for skeleton backgrounds?
-4. **Dark mode approach**: CSS variables, class-based, or media query?
-5. **Motion preferences**: Does app handle reduced motion?
+4. **Motion preferences**: Does app handle reduced motion?

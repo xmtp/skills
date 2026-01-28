@@ -14,32 +14,48 @@ interface UseIdentityReturn {
 function useIdentity(address: string): UseIdentityReturn;
 ```
 
+## Behavior
+
+**Resolution flow:**
+1. Accept Ethereum address (NOT inbox ID)
+2. Return truncated address immediately
+3. Fire ENS lookup in background
+4. Update displayName and avatar when resolved
+5. Cache result in store
+
+**Caching:**
+- Results cached by lowercase address
+- In-flight requests deduplicated
+- Failed lookups cached as null (prevents retry spam)
+
 ## Rules
 
 **MUST:**
 - Accept Ethereum addresses (0x...), NOT XMTP inbox IDs
-- Cache resolved names in Zustand store (stable selectors per store.md)
+- Cache resolved names in Zustand store
 - Show address immediately, update when resolved (never block UI)
 - Use request token pattern to prevent stale closure bugs
-- Use wagmi's configured client when available (avoids rate-limited public endpoints)
+- Use wagmi's configured client when available
 
 **NEVER:**
-- Pass inbox IDs to this hook (they're opaque identifiers, not resolvable via ENS)
-- Fire duplicate requests for same address (dedupe in-flight)
+- Pass inbox IDs to this hook
+- Fire duplicate requests for same address
 - Return stale data after address prop changes
-- Create standalone viem clients for ENS resolution (reuse wagmi's client)
+- Create standalone viem clients for ENS resolution
 
-**CORS ISSUES:**
+## States
 
-ENS resolution requires RPC calls. Default endpoints may block browser requests (CORS). If resolution fails silently or with network errors, the RPC transport likely needs configuration. Look up CORS-friendly endpoints and custom transport configuration for wagmi.
+| State | Display |
+|-------|---------|
+| `isLoading: true, displayName: null` | Show truncated address |
+| `isLoading: false, displayName: present` | Show resolved ENS name |
+| `isLoading: false, displayName: null` | Show truncated address (no ENS) |
 
 ## Look Up
 
 Before implementing, check:
 
 1. **viem ENS utilities**: How to resolve address → name and address → avatar
-2. **ENS normalization**: Proper address/name normalization before resolution
-3. **wagmi client reuse**: How to get the configured public client from wagmi
+2. **ENS normalization**: Proper address/name normalization
+3. **wagmi client reuse**: How to get configured public client from wagmi
 4. **CORS-friendly RPCs**: Which public Ethereum RPC endpoints support browser CORS
-5. **Prerequisite React skill**: Request token and stale closure patterns
-6. **Existing identity patterns**: Does user's codebase have address resolution?

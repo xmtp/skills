@@ -18,10 +18,10 @@ interface UseXMTPReturn {
   // Actions
   initialize: (signer: Signer) => Promise<void>;
   disconnect: () => Promise<void>;
-  updateActivity: () => void; // Reset session timeout on user interaction
+  updateActivity: () => void;
 }
 
-// Minimal type for client reference (only the properties the hook exposes)
+// Minimal type for client reference
 type XMTPClient = { inboxId: string; close: () => Promise<void> };
 
 // Signer interface for wallet integration
@@ -31,70 +31,65 @@ type Signer = {
   signMessage: (message: string) => Promise<Uint8Array>;
 };
 
-// IMPORTANT: identifierKind is a string literal, not an enum import
 type Identifier = {
   identifier: string;        // Ethereum address (0x...)
-  identifierKind: "Ethereum"; // Literal string - NOT an enum
+  identifierKind: "Ethereum"; // Literal string, NOT an enum
 };
 
-export function useXMTP(): UseXMTPReturn;
+function useXMTP(): UseXMTPReturn;
 ```
 
-Note: The `XMTPClient` type is intentionally minimal—it only includes properties the hook exposes to consumers.
+Note: The `XMTPClient` type is intentionally minimal—only properties the hook exposes.
+
+## Behavior
+
+**Initialization:**
+- Takes a signer from wallet provider
+- Creates XMTP client with environment config
+- Stores client reference and updates connection state
+
+**Disconnection:**
+- Closes existing client
+- Clears store state
+- Resets connection status
+
+**Session timeout:**
+- Tracks user activity
+- Disconnects after inactivity period (default: 30 minutes)
+- `updateActivity()` resets the timeout
 
 ## Rules
 
 **MUST:**
-- Ensure the component using this hook is wrapped with `next/dynamic` and `{ ssr: false }` in Next.js (see SKILL.md)
-- Track connection with a token/counter to handle race conditions when user switches accounts
-- Close existing client before creating a new one
+- Track connection with token/counter to handle race conditions
+- Close existing client before creating new one
 - Validate XMTP environment at runtime (dev/production)
-- Implement session timeout to disconnect after inactivity (default: 30 minutes)
-- Normalize all errors to `Error` type before exposing
-- Use `identifierKind: "Ethereum"` as a **string literal** - the browser SDK does not export an enum
-- Convert wallet signature hex strings to `Uint8Array` before returning from `signMessage`
+- Implement session timeout for inactivity
+- Normalize all errors to `Error` type
+- Use `identifierKind: "Ethereum"` as string literal (not enum)
+- Convert wallet signature hex strings to Uint8Array
 
 **NEVER:**
-- Leave stale clients open when initializing a new connection
+- Leave stale clients open when initializing new connection
 - Expose raw SDK error types to consumers
-- Hard-code environment values - read from env vars
-- Try to import `IdentifierKind` enum from browser SDK - it doesn't exist (Node SDK only)
+- Hard-code environment values
+- Try to import `IdentifierKind` enum from browser SDK (doesn't exist)
 
-**ERROR HANDLING:**
-- Signature rejected → Ask user to sign again
-- Network error → Retry connection
-- Database/OPFS error → Close other tabs using XMTP
-- Invalid signer → Check wallet connection
+## States
 
-**CREATING A SIGNER FROM WAGMI/VIEM:**
-
-```typescript
-import { useWalletClient } from "wagmi";
-import { toBytes } from "viem";
-
-function createSigner(walletClient: WalletClient): Signer {
-  const address = walletClient.account.address;
-
-  return {
-    type: "EOA",
-    getIdentifier: () => ({
-      identifier: address.toLowerCase(),
-      identifierKind: "Ethereum",  // String literal, not enum
-    }),
-    signMessage: async (message: string) => {
-      const signature = await walletClient.signMessage({ message });
-      return toBytes(signature);  // Convert hex to Uint8Array
-    },
-  };
-}
-```
+| State | Description |
+|-------|-------------|
+| `client: null, isConnecting: false` | Disconnected, ready to connect |
+| `client: null, isConnecting: true` | Connection in progress |
+| `client: present, isConnected: true` | Connected, ready for operations |
+| `error: present` | Connection failed, display error |
 
 ## Look Up
 
-Before implementing, query XMTP docs for current patterns:
+Before implementing, query XMTP docs for:
 
 1. **Client creation**: How to create an XMTP client with a signer
 2. **Environment config**: How to specify dev vs production network
-3. **Signer interface**: Current structure for EOA signers (identifier, identifierKind)
+3. **Signer interface**: Current structure for EOA signers
 4. **Client cleanup**: How to properly close/disconnect a client
-5. **Package exports**: Confirm the package name and exports for browser SDK
+5. **Package exports**: Package name and exports for browser SDK
