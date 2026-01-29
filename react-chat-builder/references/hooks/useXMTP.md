@@ -21,25 +21,14 @@ interface UseXMTPReturn {
   updateActivity: () => void;
 }
 
-// Minimal type for client reference
+// Minimal type for client reference - only properties the hook exposes
 type XMTPClient = { inboxId: string; close: () => Promise<void> };
 
-// Signer interface for wallet integration
-type Signer = {
-  type: "EOA";
-  getIdentifier: () => Identifier;
-  signMessage: (message: string) => Promise<Uint8Array>;
-};
-
-type Identifier = {
-  identifier: string;        // Ethereum address (0x...)
-  identifierKind: "Ethereum"; // Literal string, NOT an enum
-};
+// Signer type - LOOK UP current structure from XMTP docs
+type Signer = unknown; // Shape depends on SDK version
 
 function useXMTP(): UseXMTPReturn;
 ```
-
-Note: The `XMTPClient` type is intentionally minimal—only properties the hook exposes.
 
 ## Behavior
 
@@ -66,14 +55,11 @@ Note: The `XMTPClient` type is intentionally minimal—only properties the hook 
 - Validate XMTP environment at runtime (dev/production)
 - Implement session timeout for inactivity
 - Normalize all errors to `Error` type
-- Use `identifierKind: "Ethereum"` as string literal (not enum)
-- Convert wallet signature hex strings to Uint8Array
 
 **NEVER:**
 - Leave stale clients open when initializing new connection
 - Expose raw SDK error types to consumers
 - Hard-code environment values
-- Try to import `IdentifierKind` enum from browser SDK (doesn't exist)
 
 ## States
 
@@ -90,6 +76,8 @@ Before implementing, query XMTP docs for:
 
 1. **Client creation**: How to create an XMTP client with a signer
 2. **Environment config**: How to specify dev vs production network
-3. **Signer interface**: Current structure for EOA signers
+3. **Signer interface**: Current structure for EOA signers (type, methods, identifier format)
 4. **Client cleanup**: How to properly close/disconnect a client
 5. **Package exports**: Package name and exports for browser SDK
+6. **Signature format**: Does the SDK expect hex strings or Uint8Array for signatures?
+7. **Identifier structure**: What fields does the identifier object need?

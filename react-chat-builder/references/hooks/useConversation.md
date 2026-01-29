@@ -19,7 +19,7 @@ interface UseConversationReturn {
   // Group admin (only when isAdmin === true)
   isAdmin: boolean;
   addMembers: (addresses: string[]) => Promise<void>;
-  removeMembers: (inboxIds: string[]) => Promise<void>;
+  removeMembers: (memberIds: string[]) => Promise<void>;
   updateName: (name: string) => Promise<void>;
   updateDescription: (description: string) => Promise<void>;
 }
@@ -35,12 +35,12 @@ interface GroupMember {
 function useConversation(conversationId: string): UseConversationReturn;
 ```
 
-Note: `addMembers` accepts Ethereum addresses. Implementation handles resolution internally.
+Note: `addMembers` accepts Ethereum addresses. Implementation handles any SDK-required transformations.
 
 ## Behavior
 
 **Loading:**
-- Syncs conversation to ensure fresh data
+- Fetches conversation data
 - Fetches members for group conversations
 - Determines admin status for current user
 
@@ -55,16 +55,12 @@ Note: `addMembers` accepts Ethereum addresses. Implementation handles resolution
 ## Rules
 
 **MUST:**
-- Sync conversation before reading members
 - Check admin status before exposing admin actions
-- Update local store after consent/metadata changes
-- Lowercase all addresses before SDK operations
-- Resolve addresses to inbox identifiers for member operations
+- Update local store after consent/metadata changes (optimistic feel)
 
 **NEVER:**
-- Allow non-admins to call admin methods
+- Allow non-admins to call admin methods (check isAdmin first)
 - Expose raw SDK types in public API
-- Skip sync before reading group members
 
 ## States
 
@@ -92,7 +88,8 @@ Before implementing, query XMTP docs for:
 2. **Listing group members**: How to get members of a group
 3. **Checking permission level**: How to determine admin/super_admin status
 4. **Updating consent state**: How to allow or block a conversation
-5. **Adding group members**: How to add members (identifier format)
-6. **Removing group members**: How to remove members (by inbox ID or address)
+5. **Adding group members**: How to add members (what identifier format?)
+6. **Removing group members**: How to remove members (by what identifier?)
 7. **Updating group metadata**: How to change name and description
-8. **Syncing conversation**: How to ensure conversation data is fresh
+8. **Sync requirements**: Does SDK require sync before reading members?
+9. **Address normalization**: Does SDK normalize addresses internally?

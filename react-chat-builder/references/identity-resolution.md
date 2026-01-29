@@ -4,24 +4,24 @@ How participant identities are resolved from XMTP identifiers to human-readable 
 
 ## The Resolution Chain
 
-XMTP uses `inboxId` internally. To display a human-readable name and avatar:
+XMTP uses internal identifiers for participants. To display a human-readable name and avatar:
 
 ```
-inboxId → address → ENS name + avatar
+XMTP identifier → Ethereum address → ENS name + avatar
 ```
 
 | Step | Source | Speed | Caching |
 |------|--------|-------|---------|
-| inboxId → address | XMTP SDK | Fast (local lookup) | SDK handles |
-| address → ENS name | Ethereum RPC | Slow (network) | App caches |
-| address → ENS avatar | Ethereum RPC | Slow (network) | App caches |
+| Identifier → address | XMTP SDK | Fast (local lookup) | SDK handles |
+| Address → ENS name | Ethereum RPC | Slow (network) | App caches |
+| Address → ENS avatar | Ethereum RPC | Slow (network) | App caches |
 
 ## Behavior
 
-**Step 1: inboxId → Address**
-- Conversations and messages contain `inboxId` for participants
-- SDK provides local method to resolve inboxId to Ethereum address
-- No network call required
+**Step 1: XMTP Identifier → Address**
+- Conversations and messages contain participant identifiers
+- SDK provides method to resolve identifier to Ethereum address
+- Implementation details depend on SDK version (look up)
 
 **Step 2: Address → ENS Name + Avatar**
 - Pass Ethereum address to `useIdentity` hook
@@ -42,13 +42,13 @@ inboxId → address → ENS name + avatar
 ## Rules
 
 **MUST:**
-- Resolve inboxId to address BEFORE calling useIdentity
-- Cache results by lowercase address
+- Resolve XMTP identifier to address BEFORE calling useIdentity
+- Cache results by address
 - Deduplicate in-flight requests
 - Cache failed lookups as null
 
 **NEVER:**
-- Pass inboxId to useIdentity (must be address)
+- Pass raw XMTP identifiers to useIdentity (must be address)
 - Block UI on identity resolution
 - Fire duplicate requests for same address
 
@@ -65,15 +65,16 @@ inboxId → address → ENS name + avatar
 
 | Component | Input | Display |
 |-----------|-------|---------|
-| ConversationList | Participant inboxIds | Resolved names/avatars |
-| MessageThread | Sender inboxId | Sender name/avatar |
-| GroupManagement | Member inboxIds | Member names/avatars |
+| ConversationList | Participant identifiers | Resolved names/avatars |
+| MessageThread | Sender identifier | Sender name/avatar |
+| GroupManagement | Member identifiers | Member names/avatars |
 | IdentityBadge | Ethereum address | Name + avatar |
 
 ## Look Up
 
 Before implementing, query `/xmtp-docs` for:
 
-1. **inboxId → address**: SDK method to get Ethereum address from inboxId
+1. **Identifier → address**: SDK method to get Ethereum address from participant identifier
 2. **Participant structure**: How participants are represented in conversations/messages
-3. **Address format**: Checksummed or lowercase?
+3. **Address format**: Does SDK return checksummed or lowercase addresses?
+4. **Identifier terminology**: What does SDK call internal identifiers (inboxId, etc.)?

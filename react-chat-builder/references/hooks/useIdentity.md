@@ -24,7 +24,7 @@ function useIdentity(address: string): UseIdentityReturn;
 5. Cache result in store
 
 **Caching:**
-- Results cached by lowercase address
+- Results cached by address
 - In-flight requests deduplicated
 - Failed lookups cached as null (prevents retry spam)
 
@@ -35,13 +35,13 @@ function useIdentity(address: string): UseIdentityReturn;
 - Cache resolved names in Zustand store
 - Show address immediately, update when resolved (never block UI)
 - Use request token pattern to prevent stale closure bugs
-- Use wagmi's configured client when available
+- Deduplicate in-flight requests for same address
 
 **NEVER:**
-- Pass inbox IDs to this hook
+- Pass inbox IDs to this hook (must be address)
 - Fire duplicate requests for same address
 - Return stale data after address prop changes
-- Create standalone viem clients for ENS resolution
+- Block UI waiting for resolution
 
 ## States
 
@@ -56,6 +56,7 @@ function useIdentity(address: string): UseIdentityReturn;
 Before implementing, check:
 
 1. **viem ENS utilities**: How to resolve address → name and address → avatar
-2. **ENS normalization**: Proper address/name normalization
-3. **wagmi client reuse**: How to get configured public client from wagmi
-4. **CORS-friendly RPCs**: Which public Ethereum RPC endpoints support browser CORS
+2. **ENS normalization**: Proper address/name normalization requirements
+3. **RPC client**: How to get or create an Ethereum RPC client for ENS resolution
+4. **CORS considerations**: Which public Ethereum RPC endpoints support browser CORS
+5. **Wagmi integration**: If wagmi is present, how to reuse its configured client

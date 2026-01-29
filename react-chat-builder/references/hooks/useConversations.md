@@ -47,7 +47,6 @@ Note: The interface exposes `peerAddress` (Ethereum address). Implementation han
 **Creating DMs:**
 - Validates address format
 - Checks if peer can receive XMTP messages
-- Resolves address to inbox identifier
 - Creates conversation and adds to store
 
 **Creating Groups:**
@@ -58,20 +57,14 @@ Note: The interface exposes `peerAddress` (Ethereum address). Implementation han
 ## Rules
 
 **MUST:**
-- Lowercase all addresses before SDK operations
 - Check if peer can receive messages BEFORE creating DM
-- Resolve address to inbox identifier before DM creation
-- Use XMTPStreamManager pattern for streaming
 - Filter conversations by consent state
 - Clean up streams on unmount
 - Stabilize array options (use constants or refs for defaults)
-- Use `instanceof` to determine conversation type (Dm vs Group)
 
 **NEVER:**
-- Expose inbox IDs in the hook's public API
-- Skip the "can receive messages" check
-- Pass raw Ethereum addresses to creation methods (resolve first)
-- Assume stream methods are synchronous
+- Expose internal SDK identifiers in the hook's public API
+- Skip the "can receive messages" check before DM creation
 - Use inline arrays in useEffect/useCallback dependencies
 
 ## States
@@ -94,9 +87,10 @@ Before implementing, query XMTP docs for:
 
 1. **Syncing conversations**: How to sync and list existing conversations
 2. **Streaming conversations**: How to subscribe to new/updated conversations
-3. **Creating a DM**: How to create a 1:1 conversation (identifier resolution)
+3. **Creating a DM**: How to create a 1:1 conversation
 4. **Creating a group**: How to create a multi-party conversation with options
 5. **Reachability check**: How to check if an address can receive XMTP messages
-6. **Address to inbox**: How to resolve Ethereum address to inbox identifier
-7. **Inbox to address**: How to resolve inbox ID back to Ethereum address
-8. **Consent state**: How to read a conversation's consent state
+6. **Address resolution**: Does the SDK require resolving address to inbox identifier?
+7. **Address normalization**: Does the SDK normalize addresses or must we lowercase?
+8. **Conversation type detection**: How to determine if a conversation is DM vs Group
+9. **Consent state**: How to read a conversation's consent state
