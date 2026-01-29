@@ -26,7 +26,7 @@ This skill follows a 6-phase execution focused on producing **consumer-grade** o
 0. **Documentation Lookup** - Query current XMTP docs (MANDATORY before any code)
 1. **Detection** - Analyze project setup (framework, wallet, styling, **existing design system**)
 2. **Interview** - Ask questions via AskUserQuestion including **integration context** and **styling preferences**
-3. **Spec Generation** - Generate detailed spec document; optionally open for review
+3. **Spec Generation** - WRITE xmtp-chat-spec.md (REQUIRED before any code)
 4. **Code Generation** - Create hooks, store, and components with **loading skeletons, empty states, transitions**
 5. **Verification** - Test the integration in a real browser using agent-browser CLI
 
@@ -243,9 +243,15 @@ The generation matrix is the single source of truth for:
 
 ## Phase 3: Spec Generation (REQUIRED)
 
-After the interview, you MUST generate a detailed specification document before writing any code. Do NOT skip this phase.
+After the interview, you MUST write `xmtp-chat-spec.md` to the project root before writing any code.
 
-### CRITICAL: Copy, Don't Summarize
+**DO NOT SKIP THIS PHASE. Phase 4 will not proceed without this file.**
+
+### Step 1: Write the Spec File
+
+Use the Write tool to create `xmtp-chat-spec.md` in the project root. This is not optional.
+
+### Step 2: Copy Content, Don't Summarize
 
 **The spec must be SELF-CONTAINED.** Phase 4 code generation reads ONLY the spec, not reference files. If the spec lacks detail, code generation will be inconsistent.
 
@@ -275,7 +281,7 @@ Spec (self-contained, resolved for THIS integration)
    Phase 4: Code Generation uses SPEC as source of truth
 ```
 
-### Generate the Spec
+### Step 3: Assemble and Write
 
 1. **Read [references/generation-matrix.md](references/generation-matrix.md)** to determine which files to generate
 2. **Read each relevant reference file** and COPY:
@@ -283,7 +289,9 @@ Spec (self-contained, resolved for THIS integration)
    - All MUST/NEVER rules
    - State tables
    - Error handling tables
-3. **Generate `xmtp-chat-spec.md`** by assembling copied content into the spec structure
+3. **WRITE `xmtp-chat-spec.md`** to the project root using the Write tool
+
+**You must use the Write tool to create this file. Do not just describe what the spec would contain.**
 
 The spec includes:
 - **Configuration Summary** - All interview answers resolved
@@ -322,6 +330,9 @@ Wait for user input before proceeding to Phase 4.
 Proceed directly to Phase 4 (Code Generation).
 
 ## Phase 4: Code Generation
+
+> **GATE:** Before generating ANY code, verify `xmtp-chat-spec.md` exists in the project root.
+> If it doesn't exist, STOP and go back to Phase 3. Do not proceed without a spec file.
 
 Generate files based on the **spec document** (not references directly). The spec is the resolved source of truth for this integration.
 
