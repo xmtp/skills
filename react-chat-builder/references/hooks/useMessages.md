@@ -23,11 +23,14 @@ type StreamStatus = 'connected' | 'reconnecting' | 'disconnected';
 interface Message {
   id: string;
   conversationId: string;
-  senderInboxId: string;
+  senderInboxId: string;  // NOTE: This is NOT an Ethereum address - must resolve before ENS lookup
   content: MessageContent;
   sentAtNs: string;
   status?: 'sending' | 'sent' | 'failed';
 }
+
+// IMPORTANT: senderInboxId must be resolved to Ethereum address before identity display.
+// See identity-resolution.md for the conversion chain.
 
 type MessageContent =
   | { type: 'text'; text: string }

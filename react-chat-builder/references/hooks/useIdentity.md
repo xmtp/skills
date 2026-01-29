@@ -2,6 +2,10 @@
 
 Resolves Ethereum addresses to human-readable names and avatars via ENS or custom resolvers.
 
+> **WARNING:** This hook accepts Ethereum addresses (0x...), NOT XMTP inbox IDs.
+> If you pass an inbox ID, ENS resolution will fail silently.
+> See [identity-resolution.md](../identity-resolution.md) for the full conversion chain.
+
 ## Interface
 
 ```typescript

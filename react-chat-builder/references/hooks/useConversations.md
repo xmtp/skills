@@ -37,6 +37,10 @@ function useConversations(options?: UseConversationsOptions): UseConversationsRe
 
 Note: The interface exposes `peerAddress` (Ethereum address). Implementation handles SDK transformations internally.
 
+> **Identity Display:** Conversations contain inbox IDs, not Ethereum addresses.
+> To display ENS names, you must resolve inbox ID → address first.
+> See [identity-resolution.md](../identity-resolution.md) for the conversion chain.
+
 ## Behavior
 
 **Syncing:**
