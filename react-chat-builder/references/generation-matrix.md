@@ -132,7 +132,7 @@ These files are generated for every XMTP integration, regardless of interview an
 
 | Condition | Packages |
 |-----------|----------|
-| Q3 = `unstyled` | `@base-ui-components/react` |
+| Q3 = `unstyled` | `@base-ui/react` |
 | Q4 = `rainbowkit` | `@rainbow-me/rainbowkit`, `wagmi`, `@tanstack/react-query` |
 | Q4 = `web3modal` | `@web3modal/wagmi`, `wagmi`, `@tanstack/react-query` |
 | Q6 includes `attachments` | `@xmtp/content-type-remote-attachment` (look up current name) |

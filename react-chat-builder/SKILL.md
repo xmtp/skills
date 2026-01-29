@@ -566,7 +566,7 @@ Follow security checklist in [references/security.md](references/security.md):
 These are stable and don't require lookup:
 - `zustand` - State management
 - `viem` - Ethereum utilities (ENS resolution, address validation)
-- `@base-ui-components/react` - Unstyled components (if selected)
+- `@base-ui/react` - Unstyled components (if selected)
 - Wallet provider packages (RainbowKit, Web3Modal, etc. if selected)
 
 ## Phase 5: Verification

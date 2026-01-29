@@ -32,7 +32,7 @@ Transitions:
 - Use 4px spacing grid for consistency
 
 **Base UI Integration (when selected):**
-- Import from `@base-ui-components/react`
+- Import from `@base-ui/react`
 - Style via `data-*` attribute selectors
 
 **NEVER:**
