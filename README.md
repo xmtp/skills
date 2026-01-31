@@ -8,7 +8,8 @@ Skills are folders of instructions and resources that AI coding agents load dyna
 
 | Skill | Description |
 |-------|-------------|
-| [xmtp-docs](./xmtp-docs) | Query XMTP documentation for current SDK patterns and methods |
+| [xmtp-docs](./xmtp-docs) | Query XMTP documentation for current SDK patterns |
+| [xmtp-agents](./xmtp-agents) | Build XMTP messaging agents with @xmtp/agent-sdk |
 
 ---
 
@@ -22,6 +23,32 @@ Query current XMTP documentation to get accurate SDK patterns before writing cod
 - Finding examples for streaming, consent, groups, or content types
 
 **How it works:** Uses WebFetch to query specific documentation pages via `docs.xmtp.org/llms.txt` index
+
+---
+
+### xmtp-agents
+
+Skills for building XMTP messaging agents using the `@xmtp/agent-sdk`. Contains 8 skills with 30+ rules covering core patterns.
+
+**Use when:**
+- Creating new XMTP agents
+- Handling messages, reactions, attachments
+- Implementing inline actions (buttons/menus)
+- Managing group conversations
+- Processing token transactions
+
+**Skills included:**
+
+| Skill | Description |
+|-------|-------------|
+| [agent-basics](./xmtp-agents/agent-basics) | Core setup, events, middleware |
+| [commands](./xmtp-agents/commands) | Validators, filters, type guards |
+| [inline-actions](./xmtp-agents/inline-actions) | Interactive buttons (XIP-67) |
+| [attachments](./xmtp-agents/attachments) | Encrypted file handling |
+| [transactions](./xmtp-agents/transactions) | USDC transfers, wallet calls |
+| [groups](./xmtp-agents/groups) | Group management, permissions |
+| [reactions](./xmtp-agents/reactions) | Emoji reactions, thinking indicator |
+| [domain-resolver](./xmtp-agents/domain-resolver) | ENS, Farcaster resolution |
 
 ## Installation
 
