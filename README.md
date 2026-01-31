@@ -41,14 +41,14 @@ Skills for building XMTP messaging agents using the `@xmtp/agent-sdk`. Contains 
 
 | Skill | Description |
 |-------|-------------|
-| [agent-basics](./xmtp-agents/agent-basics) | Core setup, events, middleware |
-| [commands](./xmtp-agents/commands) | Validators, filters, type guards |
-| [inline-actions](./xmtp-agents/inline-actions) | Interactive buttons (XIP-67) |
-| [attachments](./xmtp-agents/attachments) | Encrypted file handling |
-| [transactions](./xmtp-agents/transactions) | USDC transfers, wallet calls |
-| [groups](./xmtp-agents/groups) | Group management, permissions |
-| [reactions](./xmtp-agents/reactions) | Emoji reactions, thinking indicator |
-| [domain-resolver](./xmtp-agents/domain-resolver) | ENS, Farcaster resolution |
+| [building-agents](./xmtp-agents/building-agents) | Core setup, events, middleware |
+| [handling-commands](./xmtp-agents/handling-commands) | Validators, filters, type guards |
+| [creating-inline-actions](./xmtp-agents/creating-inline-actions) | Interactive buttons (XIP-67) |
+| [handling-attachments](./xmtp-agents/handling-attachments) | Encrypted file handling |
+| [handling-transactions](./xmtp-agents/handling-transactions) | USDC transfers, wallet calls |
+| [managing-groups](./xmtp-agents/managing-groups) | Group management, permissions |
+| [sending-reactions](./xmtp-agents/sending-reactions) | Emoji reactions, thinking indicator |
+| [resolving-domains](./xmtp-agents/resolving-domains) | ENS, Farcaster resolution |
 
 ## Installation
 

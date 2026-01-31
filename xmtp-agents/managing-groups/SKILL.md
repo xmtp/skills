@@ -1,5 +1,5 @@
 ---
-name: groups
+name: managing-groups
 description: Group conversation management for XMTP agents. Use when creating groups, managing members, setting permissions, or sending welcome messages. Triggers on group creation, member management, or permissions.
 license: MIT
 metadata:
@@ -78,7 +78,3 @@ rules/permissions-roles.md
 rules/welcome-on-install.md
 ```
 
-## Related examples
-
-- [xmtp-gated-group](https://github.com/xmtplabs/xmtp-agent-examples/tree/main/examples/xmtp-gated-group) - Group gating with passphrase
-- [xmtp-welcome-message](https://github.com/xmtplabs/xmtp-agent-examples/tree/main/examples/xmtp-welcome-message) - Welcome message patterns

@@ -1,5 +1,5 @@
 ---
-name: attachments
+name: handling-attachments
 description: File attachment handling for XMTP agents. Use when sending or receiving images, files, or any encrypted remote attachments. Triggers on file upload, image sending, or remote attachment handling.
 license: MIT
 metadata:
@@ -64,6 +64,3 @@ rules/receive-attachment.md
 rules/upload-callback.md
 ```
 
-## Related examples
-
-- [xmtp-attachments](https://github.com/xmtplabs/xmtp-agent-examples/tree/main/examples/xmtp-attachments) - Full attachment handling with Pinata

@@ -1,5 +1,5 @@
 ---
-name: reactions
+name: sending-reactions
 description: Emoji reactions and thinking indicators for XMTP agents. Use when adding reactions to messages or showing processing state with thinking emoji. Triggers on emoji reactions, thinking indicator, or message acknowledgment.
 license: MIT
 metadata:
@@ -77,6 +77,3 @@ rules/receive-reaction.md
 rules/patterns-thinking.md
 ```
 
-## Related examples
-
-- [xmtp-thinking-reaction](https://github.com/xmtplabs/xmtp-agent-examples/tree/main/examples/xmtp-thinking-reaction) - Thinking indicator pattern
