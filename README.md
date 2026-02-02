@@ -8,7 +8,9 @@ Skills are folders of instructions and resources that AI coding agents load dyna
 
 | Skill | Description |
 |-------|-------------|
-| [xmtp-docs](./xmtp-docs) | Query XMTP documentation for current SDK patterns and methods |
+| [xmtp-docs](./xmtp-docs) | Query XMTP documentation for current SDK patterns |
+| [xmtp-agents](./xmtp-agents) | Build XMTP messaging agents with @xmtp/agent-sdk |
+| [xmtp-cli](./xmtp-cli) | Test, debug, and interact with XMTP from the command line (@xmtp/cli) |
 
 ---
 
@@ -22,6 +24,57 @@ Query current XMTP documentation to get accurate SDK patterns before writing cod
 - Finding examples for streaming, consent, groups, or content types
 
 **How it works:** Uses WebFetch to query specific documentation pages via `docs.xmtp.org/llms.txt` index
+
+---
+
+### xmtp-agents
+
+Skills for building XMTP messaging agents using the `@xmtp/agent-sdk`. Contains 8 skills with 30+ rules covering core patterns.
+
+**Use when:**
+- Creating new XMTP agents
+- Handling messages, reactions, attachments
+- Implementing inline actions (buttons/menus)
+- Managing group conversations
+- Processing token transactions
+
+**Skills included:**
+
+| Skill | Description |
+|-------|-------------|
+| [building-agents](./xmtp-agents/building-agents) | Core setup, events, middleware |
+| [handling-commands](./xmtp-agents/handling-commands) | Validators, filters, type guards |
+| [creating-inline-actions](./xmtp-agents/creating-inline-actions) | Interactive buttons (XIP-67) |
+| [handling-attachments](./xmtp-agents/handling-attachments) | Encrypted file handling |
+| [handling-transactions](./xmtp-agents/handling-transactions) | USDC transfers, wallet calls |
+| [managing-groups](./xmtp-agents/managing-groups) | Group management, permissions |
+| [sending-reactions](./xmtp-agents/sending-reactions) | Emoji reactions, thinking indicator |
+| [resolving-domains](./xmtp-agents/resolving-domains) | ENS, Farcaster resolution |
+
+---
+
+### xmtp-cli
+
+Use the XMTP CLI (`xmtp` / `@xmtp/cli`) for testing, debugging, and interacting with conversations, groups, and messages from the command line.
+
+**Use when:**
+- Testing or debugging XMTP from the CLI
+- Sending messages, creating groups, listing conversations
+- Resolving addresses, syncing, managing permissions, or demoing content types
+
+**Sub-skills included:**
+
+| Sub-skill | Description |
+|-----------|-------------|
+| [setup](./xmtp-cli/setup) | Init and env variables |
+| [groups](./xmtp-cli/groups) | Create DM/group, metadata |
+| [send](./xmtp-cli/send) | Send messages to address or group |
+| [list](./xmtp-cli/list) | List conversations, members, messages; find |
+| [debug](./xmtp-cli/debug) | Info, resolve address, inbox |
+| [sync](./xmtp-cli/sync) | Sync conversations, syncall |
+| [permissions](./xmtp-cli/permissions) | List, info, update group permissions |
+| [content](./xmtp-cli/content) | Text, markdown, attachment, transaction, deeplink, miniapp |
+| [debugging](./xmtp-cli/debugging) | Force debug env (XMTP_FORCE_DEBUG) |
 
 ## Installation
 
