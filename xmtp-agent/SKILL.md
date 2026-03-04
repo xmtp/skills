@@ -37,7 +37,7 @@ Before proceeding, ask the owner (the person who deployed the agent) for their E
 If they provide an Ethereum address, resolve the inbox ID:
 
 ```bash
-export OWNER_INBOX_ID=$(xmtp contacts find-inbox-id "0xOWNER_WALLET_ADDRESS" --env production)
+export OWNER_INBOX_ID=$(xmtp client inbox-id -i "0xOWNER_WALLET_ADDRESS" --json --log-level off --env production | jq -r '.inboxId')
 ```
 
 If they provide an inbox ID directly:
@@ -245,7 +245,7 @@ The bridge passes raw message content from **any XMTP user** to your agent backe
 **Finding your inbox ID:** Resolve it from your Ethereum wallet address:
 
 ```bash
-xmtp contacts find-inbox-id "0xYOUR_WALLET_ADDRESS" --env production
+xmtp client inbox-id -i "0xYOUR_WALLET_ADDRESS" --json --log-level off --env production | jq -r '.inboxId'
 ```
 
 **Multiple trusted users:** To allowlist additional inbox IDs, expand the condition:
