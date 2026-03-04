@@ -9,7 +9,7 @@ description: >
 
 # XMTP Agent
 
-XMTP is the open protocol for secure, decentralized messaging between people and agents. Agents participate via the XMTP CLI.
+XMTP is the open protocol for secure, decentralized messaging between people and agents. Agents participate via the XMTP CLI, streaming incoming messages and sending responses through a bridge script.
 
 ## Getting Started
 
@@ -19,7 +19,7 @@ XMTP is the open protocol for secure, decentralized messaging between people and
 npm install -g @xmtp/cli
 ```
 
-Requires Node 22+.
+Requires Node 22+ and `jq` for JSON processing.
 
 ### Init
 
@@ -32,10 +32,69 @@ Generates `~/.xmtp/.env` with your agent's keys.
 ### Verify
 
 ```bash
-xmtp client info --env production
+xmtp client info --json --env production 2>/dev/null | grep -v WARN | jq .
 ```
 
-## Core Workflow
+> **Note:** The CLI may output `WARN` lines to stdout before JSON. Always pipe through `grep -v WARN` when parsing JSON output.
+
+## Running as an Agent
+
+The recommended way to operate as a real-time agent is through a bridge script that streams messages and routes them to an AI for responses. The bridge handles the event loop — your agent just responds to messages.
+
+### Bridge Script (OpenClaw)
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+SESSION_ID="xmtp-agent-$$"
+
+# Get the agent's inbox ID for filtering own messages
+MY_INBOX_ID=$(xmtp client info --json --env production 2>/dev/null \
+  | grep -v WARN \
+  | jq -r '.inboxId')
+
+xmtp conversations stream-all-messages --json --env production 2>/dev/null | while read -r event; do
+  # Skip WARN lines that aren't JSON
+  [[ "$event" == WARN* ]] && continue
+
+  conv_id=$(echo "$event" | jq -r '.conversationId // empty')
+  sender=$(echo "$event" | jq -r '.senderInboxId // empty')
+  content=$(echo "$event" | jq -r '.content // empty')
+
+  # Skip own messages or empty events
+  [[ -z "$conv_id" || -z "$content" || "$sender" == "$MY_INBOX_ID" ]] && continue
+
+  # Send to OpenClaw for a response
+  response=$(openclaw agent \
+    --session-id "$SESSION_ID" \
+    --message "$content" \
+    --json \
+    2>/dev/null \
+    | jq -r '.reply // empty') || continue
+
+  # Reply via CLI
+  [[ -n "$response" ]] && \
+    xmtp conversation send-text "$conv_id" "$response" --env production
+done
+```
+
+> This is a reference pattern, not production-grade. A production bridge should handle stream disconnects, message queuing, and concurrent conversations.
+
+### How the Bridge Works
+
+1. Gets the agent's inbox ID for self-message filtering
+2. Streams all incoming messages as ndjson via `stream-all-messages`
+3. Filters out own messages by comparing `senderInboxId` to the agent's inbox ID
+4. Passes each message to OpenClaw via `openclaw agent --json`
+5. Extracts the reply from the `.reply` field in OpenClaw's JSON response
+6. Sends the reply back via `xmtp conversation send-text`
+
+The agent's system prompt and behavioral rules come from OpenClaw's agent configuration, not from CLI flags.
+
+## CLI Commands
+
+These are the building blocks the bridge uses. You can also use them directly for one-off operations.
 
 ### Check reachability
 
@@ -61,7 +120,7 @@ xmtp conversations create-group 0xAddr1 0xAddr2 --name "Group Name" --json --env
 xmtp conversations stream-all-messages --json --env production
 ```
 
-Outputs ndjson — each line has conversation ID, sender, and content.
+Outputs ndjson — each line has `conversationId`, `senderInboxId`, and `content`.
 
 ### Send text
 
@@ -90,45 +149,6 @@ xmtp conversations --help
 xmtp client --help
 ```
 
-## Bridge Script
-
-Minimal example using OpenClaw as the AI process:
-
-```bash
-#!/bin/bash
-set -euo pipefail
-
-SYSTEM_MSG="You are an AI agent in an XMTP conversation. Rules:
-- Keep responses concise and helpful
-- Use plain text, no markdown formatting
-- Respect consent — only message conversations you belong to
-- React instead of replying when you have nothing substantive to add
-- Never announce tool usage or narrate your actions"
-
-MY_ADDRESS=$(xmtp client info --json --env production | jq -r '.accountAddresses[0]')
-
-xmtp conversations stream-all-messages --json --env production | while read -r event; do
-  conv_id=$(echo "$event" | jq -r '.conversationId // empty')
-  sender=$(echo "$event" | jq -r '.senderAddress // empty')
-  content=$(echo "$event" | jq -r '.content // empty')
-
-  # Skip own messages or empty events
-  [[ -z "$conv_id" || -z "$content" || "$sender" == "$MY_ADDRESS" ]] && continue
-
-  # Send to OpenClaw for a response
-  response=$(openclaw chat \
-    --system "$SYSTEM_MSG" \
-    --message "$content" \
-    2>/dev/null) || continue
-
-  # Reply via CLI
-  [[ -n "$response" ]] && \
-    xmtp conversation send-text "$conv_id" "$response" --env production
-done
-```
-
-> This is a reference pattern, not production-grade. A production bridge should handle stream disconnects, message queuing, and concurrent conversations.
-
 ## Behavioral Notes
 
 - **Respect consent** — check consent state before sending; don't message conversations you haven't been added to.
@@ -142,10 +162,11 @@ done
 | Mistake | Fix |
 |---------|-----|
 | Missing `--env production` | Always pass `--env production` for live network; default is dev |
+| Using `openclaw chat` | Use `openclaw agent --session-id <id> --message "<text>" --json` |
+| Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against agent's inbox ID from `client info` |
+| WARN lines breaking `jq` | Pipe through `grep -v WARN` or skip lines starting with `WARN` |
 | Sending without `can-message` check | Verify address is reachable before creating a conversation |
 | Not syncing before reading history | Run `xmtp conversations sync-all` before `messages` commands |
 | Parsing human-readable output | Use `--json` flag for all programmatic operations |
-| Replying to own messages | Filter stream events by sender address before responding |
-| Ignoring stream disconnects | Wrap the stream process in a retry loop for resilience |
 | Using markdown in messages | XMTP clients display raw `**text**` — use plain text |
 | Announcing tool usage | Execute tools silently; respond naturally in conversation |
