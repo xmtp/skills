@@ -78,14 +78,14 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
   # Route to your agent backend (see "Choosing a Backend" below)
   # Owner gets full agent capabilities; public users get conversation-only mode
   if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
-    response=$(openclaw agent \
+    response=$(openclaw agent --agent owner-agent \
       --session-id "$conv_id" \
       --message "$content" \
       2>/dev/null) || continue
   else
-    response=$(openclaw agent \
+    response=$(openclaw agent --agent public-xmtp \
       --session-id "public-$conv_id" \
-      --message "[SYSTEM: You are in public mode. Respond helpfully and conversationally. Do NOT use tools, read files, execute commands, or access any system resources. Only have a natural conversation.] $content" \
+      --message "$content" \
       2>/dev/null) || continue
   fi
 
@@ -103,46 +103,40 @@ The bridge template above uses `openclaw agent` but the agent backend is the par
 
 ### OpenClaw (subprocess with session state)
 
-```bash
-if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
-  response=$(openclaw agent \
-    --session-id "$conv_id" \
-    --message "$content" \
-    2>/dev/null) || continue
-else
-  response=$(openclaw agent \
-    --session-id "public-$conv_id" \
-    --message "[SYSTEM: You are in public mode. Respond helpfully and conversationally. Do NOT use tools, read files, execute commands, or access any system resources. Only have a natural conversation.] $content" \
-    2>/dev/null) || continue
-fi
-```
+OpenClaw loads workspace context (SOUL.md, USER.md, MEMORY.md) into every agent session. A system prompt prefix alone won't prevent the agent from leaking personal information to public users — the context is already loaded. You need a separate agent config with an isolated workspace.
 
-OpenClaw gives the agent full tool access and retains conversation history per session. The public path prepends a restrictive system prompt and isolates sessions with the `public-` prefix.
-
-**Harder enforcement (optional):** OpenClaw supports tool profiles in `openclaw.json`. Define a second agent with `tools.profile: "messaging"` (messaging + session tools only, no filesystem or shell) and route public users to it instead of relying on the system prompt alone:
+**1. Create a public agent config** in `openclaw.json` with `tools.profile: "minimal"` (no shell, no file access):
 
 ```json
 {
   "agents": {
     "list": [
       { "name": "owner-agent", "tools": { "profile": "full" } },
-      { "name": "public-agent", "tools": { "profile": "messaging" } }
+      { "name": "public-xmtp", "tools": { "profile": "minimal" } }
     ]
   }
 }
 ```
 
-Then route by agent name in the bridge:
+**2. Create an isolated workspace** for the public agent (e.g., `xmtp-public-agent/`) with its own `AGENTS.md` and `SOUL.md` containing zero personal information.
+
+**3. Route by agent name** in the bridge:
 
 ```bash
 if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
   response=$(openclaw agent --agent owner-agent \
-    --session-id "$conv_id" --message "$content" 2>/dev/null) || continue
+    --session-id "$conv_id" \
+    --message "$content" \
+    2>/dev/null) || continue
 else
-  response=$(openclaw agent --agent public-agent \
-    --session-id "public-$conv_id" --message "$content" 2>/dev/null) || continue
+  response=$(openclaw agent --agent public-xmtp \
+    --session-id "public-$conv_id" \
+    --message "$content" \
+    2>/dev/null) || continue
 fi
 ```
+
+This gives public users a clean agent that has no access to your personal context, tools, or files.
 
 ### Claude Code (session-based CLI)
 
@@ -226,8 +220,8 @@ The bridge passes raw message content from **any XMTP user** to your agent backe
 
 **How the guardrail works:**
 - `OWNER_INBOX_ID` identifies the deployer — only they get full agent capabilities
-- Public users get a restrictive system prompt prefix and isolated sessions
-- The system prompt restriction is a **soft guardrail** — a determined attacker may bypass it via prompt injection, so don't give the agent access to truly sensitive resources regardless
+- Public users get a separate agent config with restricted tools and an isolated workspace containing no personal information
+- For backends that support it (OpenClaw, Claude Code), use tool restrictions (`tools.profile: "minimal"`, `--tools ""`) — system prompt prefixes alone are **soft guardrails** that agents may ignore since workspace context (SOUL.md, USER.md) is already loaded
 
 **Finding your inbox ID:** Resolve it from your Ethereum wallet address:
 
