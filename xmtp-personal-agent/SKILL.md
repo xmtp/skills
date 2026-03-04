@@ -9,56 +9,32 @@ description: >
 
 # XMTP Personal Agent
 
-Connect your agent to XMTP — the open protocol for secure, decentralized messaging. Your agent gets its own identity on the network and can message people, join groups, and respond to conversations using the XMTP CLI.
+You are a personal agent connecting to XMTP — the open protocol for secure, decentralized messaging. This skill tells you how to get on the network and start responding to messages. For the full CLI command reference, read the XMTP CLI skill at `packages/xmtp-cli/skills/xmtp-cli/SKILL.md` in the [xmtp-js repo](https://github.com/xmtp/xmtp-js).
 
-> **Before continuing:** Read the XMTP CLI skill for full command reference. It lives at `packages/xmtp-cli/skills/xmtp-cli/SKILL.md` in the [xmtp-js repo](https://github.com/xmtp/xmtp-js). This skill covers only what's specific to running as a personal agent — the bridge pattern, stream output format, and agent behavioral guidance.
+**The difference:** The CLI skill documents every command and flag. This skill tells you, as an agent, what to do — in order — to get connected and start operating.
 
-## Getting Started
-
-### Install
+## Step 1: Install and Initialize
 
 ```bash
 npm install -g @xmtp/cli
-```
-
-Requires Node 22+ and `jq` for JSON processing.
-
-### Init
-
-```bash
 xmtp init --env production
 ```
 
-Generates `~/.xmtp/.env` with your wallet key, DB encryption key, and environment.
+Requires Node 22+ and `jq`. Init generates `~/.xmtp/.env` with your wallet key and encryption key.
 
-### Verify
+Verify you're registered:
 
 ```bash
 xmtp client info --json --log-level off --env production
 ```
 
-Returns:
+Your inbox ID is at `.properties.inboxId` in the output.
 
-```json
-{
-  "properties": {
-    "address": "0x...",
-    "inboxId": "...",
-    "installationId": "...",
-    "isRegistered": true
-  }
-}
-```
+## Step 2: Start the Bridge
 
-## Running as an Agent
+This is how you operate. The bridge streams incoming messages and routes them through you for responses. Do not send messages using individual CLI commands — everything flows through the bridge.
 
-> **Do not send messages using individual CLI commands.** Set up the bridge script first. The bridge handles streaming, responding, and self-message filtering in one process. Start the bridge, then all messaging flows through it.
-
-### Bridge Script
-
-This bridge uses `openclaw agent` for reply generation. The OpenClaw runtime gives the sub-session full tool access and retains conversation history via `--session-id`. No extra priming needed — the agent's system prompt and behavioral rules come from OpenClaw's agent configuration.
-
-**Other backends:** Replace the `openclaw agent` call with your AI process of choice.
+Save this as a script and run it:
 
 ```bash
 #!/bin/bash
@@ -66,14 +42,13 @@ set -euo pipefail
 
 SESSION_ID="xmtp-agent-$$"
 
-# Get the agent's inbox ID for filtering own messages
-# Inbox ID is at .properties.inboxId in the JSON output
+# Get your inbox ID for filtering your own messages
 MY_INBOX_ID=$(xmtp client info --json --log-level off --env production \
   | jq -r '.properties.inboxId // empty')
 
 [[ -z "$MY_INBOX_ID" ]] && echo "Failed to get inbox ID" >&2 && exit 1
 
-# Stream messages as ndjson — one JSON object per line
+# Stream all incoming messages and respond
 xmtp conversations stream-all-messages --json --log-level off --env production \
   | while read -r event; do
 
@@ -82,27 +57,33 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
   content=$(echo "$event" | jq -r '.content // empty')
   content_type=$(echo "$event" | jq -r '.contentType.typeId // empty')
 
-  # Skip own messages, empty events, and non-text content types
+  # Skip your own messages, empty events, and non-text content
   [[ -z "$conv_id" || -z "$content" || "$sender" == "$MY_INBOX_ID" ]] && continue
   [[ "$content_type" != "text" ]] && continue
 
-  # Send to OpenClaw for a response
+  # Generate a response (OpenClaw example — replace with your AI backend)
   response=$(openclaw agent \
     --session-id "$SESSION_ID" \
     --message "$content" \
     2>/dev/null) || continue
 
-  # Reply via CLI
+  # Send the response
   [[ -n "$response" ]] && \
     xmtp conversation send-text "$conv_id" "$response" --env production
 done
 ```
 
-> This is a reference pattern, not production-grade. A production bridge should handle stream disconnects, message queuing, and concurrent conversations.
+That's it. The bridge streams messages, you respond, replies go out.
 
-### Stream Output Format
+### OpenClaw
 
-Each line from `stream-all-messages --json` is a JSON object:
+This example uses `openclaw agent` for reply generation. The OpenClaw runtime gives the sub-session full tool access and retains conversation history via `--session-id`. The agent's system prompt and behavioral rules come from OpenClaw's agent configuration — no extra priming needed.
+
+**Other backends:** Replace the `openclaw agent` call with your AI process of choice.
+
+## Stream Output Format
+
+Each line from the stream is a JSON object:
 
 ```json
 {
@@ -122,19 +103,10 @@ Each line from `stream-all-messages --json` is a JSON object:
 }
 ```
 
-### How the Bridge Works
-
-1. Gets the agent's inbox ID from `client info` at `.properties.inboxId`
-2. Streams all incoming messages as ndjson via `stream-all-messages`
-3. Filters out own messages by comparing `senderInboxId` to the agent's inbox ID
-4. Skips non-text content types (reactions, group updates, etc.)
-5. Passes each message to `openclaw agent`, which returns plaintext
-6. Sends the reply back via `xmtp conversation send-text`
-
 ## Behavioral Notes
 
-- **Respect consent** — check consent state before sending; don't message conversations you haven't been added to.
-- **Use `--log-level off`** — suppresses log output that can interfere with JSON parsing.
+- **Respect consent** — don't message conversations you haven't been added to.
+- **Use `--log-level off`** — suppresses log output that interferes with JSON parsing.
 - **Be concise** — agents that over-message get muted; react instead of replying when nothing substantive to add.
 - **Plain text** — no markdown; XMTP clients render raw formatting characters.
 
@@ -142,9 +114,9 @@ Each line from `stream-all-messages --json` is a JSON object:
 
 | Mistake | Fix |
 |---------|-----|
-| Sending messages before starting bridge | Set up the bridge first; all messaging flows through it |
-| Reading `.inboxId` from client info | Inbox ID is at `.properties.inboxId` in the JSON output |
-| Using `openclaw chat` | Use `openclaw agent --session-id <id> --message "<text>"`; returns plaintext |
-| Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against agent's inbox ID |
-| Not using `--log-level off` | Log output can mix with JSON on stdout; suppress with `--log-level off` |
+| Sending messages without the bridge | Start the bridge first; all messaging flows through it |
+| Reading `.inboxId` from client info | Inbox ID is at `.properties.inboxId` |
+| Using `openclaw chat` | Use `openclaw agent --session-id <id> --message "<text>"` |
+| Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against your inbox ID |
+| Not using `--log-level off` | Log output mixes with JSON on stdout; suppress it |
 | Announcing tool usage | Execute tools silently; respond naturally in conversation |
