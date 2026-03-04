@@ -73,9 +73,7 @@ xmtp conversations stream-all-messages --json --env production 2>/dev/null | whi
   response=$(openclaw agent \
     --session-id "$SESSION_ID" \
     --message "$content" \
-    --json \
-    2>/dev/null \
-    | jq -r '.result.payloads[0].text // empty') || continue
+    2>/dev/null) || continue
 
   # Reply via CLI
   [[ -n "$response" ]] && \
@@ -90,7 +88,7 @@ done
 1. Gets the agent's inbox ID for self-message filtering
 2. Streams all incoming messages as ndjson via `stream-all-messages`
 3. Filters out own messages by comparing `senderInboxId` to the agent's inbox ID
-4. Passes each message to `openclaw agent --json`, extracts response from `.result.payloads[0].text`
+4. Passes each message to `openclaw agent`, which returns plaintext
 5. Sends the reply back via `xmtp conversation send-text`
 
 ## CLI Reference
@@ -164,7 +162,7 @@ xmtp client --help
 |---------|-----|
 | Sending messages before starting bridge | Set up the bridge first; all messaging flows through it |
 | Missing `--env production` | Always pass `--env production` for live network; default is dev |
-| Using `openclaw chat` or reading `.reply` | Use `openclaw agent --session-id <id> --message "<text>" --json`; response is at `.result.payloads[0].text` |
+| Using `openclaw chat` | Use `openclaw agent --session-id <id> --message "<text>"`; returns plaintext |
 | Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against agent's inbox ID from `client info` |
 | WARN lines breaking `jq` | Pipe through `grep -v WARN` or skip lines starting with `WARN` |
 | Sending without `can-message` check | Verify address is reachable before creating a conversation |
