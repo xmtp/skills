@@ -58,6 +58,8 @@ MY_INBOX_ID=$(xmtp client info --json --env production 2>/dev/null \
   | grep -v WARN \
   | jq -r '.inboxId')
 
+[[ -z "$MY_INBOX_ID" ]] && echo "Failed to get inbox ID" >&2 && exit 1
+
 xmtp conversations stream-all-messages --json --env production 2>/dev/null | while read -r event; do
   # Skip WARN lines that aren't JSON
   [[ "$event" == WARN* ]] && continue
