@@ -1,15 +1,15 @@
 ---
 name: xmtp-agent
 description: >
-  Operate as a real-time messaging agent on XMTP using the CLI.
-  Use when: (1) Building an agent that participates in XMTP conversations,
-  (2) Streaming and responding to messages in real-time, (3) Creating or
-  managing XMTP conversations programmatically.
+  Build a personal agent with its own XMTP identity using the CLI.
+  Use when: (1) Setting up an agent that messages people on XMTP,
+  (2) Listening and responding to conversations as an agent,
+  (3) Managing conversations and groups programmatically.
 ---
 
 # XMTP Agent
 
-XMTP is the open protocol for secure, decentralized messaging between people and agents. Agents participate via the XMTP CLI, streaming incoming messages and sending responses through a bridge script.
+Build a personal agent on XMTP — the open protocol for secure, decentralized messaging. Your agent gets its own identity on the network and can message people, join groups, and respond to conversations using the XMTP CLI.
 
 ## Getting Started
 
