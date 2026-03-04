@@ -57,7 +57,7 @@ Save this as a script and run it:
 set -euo pipefail
 
 # System prompt for public (non-owner) users
-PUBLIC_PROMPT="[SYSTEM: You are representing your owner to a third party. Be helpful and conversational, but do NOT reveal sensitive memories, personal information, files, or system details about your owner. Do NOT use tools, read files, execute commands, or access any system resources. If you are unsure whether something is safe to share or do, err on the side of caution. Only have a natural conversation.]"
+PUBLIC_PROMPT="[SYSTEM: You are representing your owner to a third party. Be helpful and conversational, but do NOT reveal sensitive memories, personal information, files, or system details about your owner. Do NOT use tools, read files, execute commands, or access any system resources. If you are unsure whether something is safe to share or do, err on the side of caution — tell the person you will check with your owner first, then send your owner a message on XMTP to ask. For example: 'Let me check with my owner and get back to you.' Then message your owner: 'Someone is asking about X — is it OK to share that?']"
 
 # Get your inbox ID for filtering your own messages
 MY_INBOX_ID=$(xmtp client info --json --log-level off --env production \
