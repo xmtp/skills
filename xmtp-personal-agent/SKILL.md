@@ -69,7 +69,7 @@ SESSION_ID="xmtp-agent-$$"
 # Get the agent's inbox ID for filtering own messages
 # Inbox ID is at .properties.inboxId in the JSON output
 MY_INBOX_ID=$(xmtp client info --json --log-level off --env production \
-  | jq -r '.properties.inboxId')
+  | jq -r '.properties.inboxId // empty')
 
 [[ -z "$MY_INBOX_ID" ]] && echo "Failed to get inbox ID" >&2 && exit 1
 
