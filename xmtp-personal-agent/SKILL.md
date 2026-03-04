@@ -1,19 +1,16 @@
 ---
 name: xmtp-personal-agent
 description: >
-  Connect your agent to XMTP so it can message people on the open network.
-  Use when: (1) Giving your agent its own XMTP identity,
-  (2) Listening and responding to conversations via the XMTP CLI,
-  (3) Managing conversations and groups programmatically.
+  Connect a running agent (OpenClaw, Claude Code, LangChain, custom Python, any agent runtime) to XMTP messaging so people can DM it and get responses that use the agent's full capabilities — tools, memory, session context. Provides the complete bridge pattern: XMTP CLI setup, identity registration, streaming incoming messages, routing through your agent backend, and sending replies back. Use this skill whenever someone wants to make their agent reachable over XMTP, write a bridge or listener script between an agent process and XMTP, set up xmtp init and stream-all-messages for an agent, have their agent respond to XMTP conversations continuously, wire any agent runtime to the XMTP open messaging network, or pipe XMTP messages through stdin/stdout to an agent process. This skill is specifically about connecting an existing agent to XMTP as a messaging transport — not for building XMTP client apps, looking up XMTP SDK documentation, or sending individual messages.
 ---
 
 # XMTP Personal Agent
 
-You are a personal agent connecting to XMTP — the open protocol for secure, decentralized messaging. This skill tells you how to get on the network and start responding to messages. For the full CLI command reference, read the XMTP CLI skill at `packages/xmtp-cli/skills/xmtp-cli/SKILL.md` in the [xmtp-js repo](https://github.com/xmtp/xmtp-js).
+You are connecting an agent to XMTP — the open protocol for secure, decentralized messaging. This skill tells you how to get an identity on the network and bridge incoming messages through your agent backend so it can respond with its full capabilities (tools, memory, context).
 
-**The difference:** The CLI skill documents every command and flag. This skill tells you, as an agent, what to do — in order — to get connected and start operating.
+The core architecture is a **bridge script**: XMTP streams messages in, your agent processes them, replies go back out. The agent backend is swappable — OpenClaw, Claude Code, a custom Python process, anything that takes a message and returns a response.
 
-> **Complete both steps before sending or receiving any messages.** Step 1 creates your identity. Step 2 starts the bridge that handles all messaging. You cannot send messages until the bridge is running.
+> **Complete both steps before sending or receiving any messages.** Step 1 creates your XMTP identity. Step 2 starts the bridge. You cannot send messages until the bridge is running.
 
 ## Step 1: Install and Initialize
 
@@ -34,15 +31,13 @@ Your inbox ID is at `.properties.inboxId` in the output. **Do not send any messa
 
 ## Step 2: Start the Bridge
 
-This is how you operate. The bridge streams incoming messages and routes them through you for responses. Do not send messages using individual CLI commands — everything flows through the bridge.
+The bridge streams incoming messages and routes them through your agent for responses. Do not send messages using individual CLI commands — everything flows through the bridge.
 
 Save this as a script and run it:
 
 ```bash
 #!/bin/bash
 set -euo pipefail
-
-SESSION_ID="xmtp-agent-$$"
 
 # Get your inbox ID for filtering your own messages
 MY_INBOX_ID=$(xmtp client info --json --log-level off --env production \
@@ -52,7 +47,7 @@ MY_INBOX_ID=$(xmtp client info --json --log-level off --env production \
 
 # Stream all incoming messages and respond
 xmtp conversations stream-all-messages --json --log-level off --env production \
-  | while read -r event; do
+  | while IFS= read -r event; do
 
   conv_id=$(echo "$event" | jq -r '.conversationId // empty')
   sender=$(echo "$event" | jq -r '.senderInboxId // empty')
@@ -63,9 +58,9 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
   [[ -z "$conv_id" || -z "$content" || "$sender" == "$MY_INBOX_ID" ]] && continue
   [[ "$content_type" != "text" ]] && continue
 
-  # Generate a response (OpenClaw example — replace with your AI backend)
+  # Route to your agent backend (see "Choosing a Backend" below)
   response=$(openclaw agent \
-    --session-id "$SESSION_ID" \
+    --session-id "$conv_id" \
     --message "$content" \
     2>/dev/null) || continue
 
@@ -75,13 +70,53 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
 done
 ```
 
-That's it. The bridge streams messages, you respond, replies go out.
+The bridge uses the XMTP conversation ID as the session ID so each person (or group) chatting with your agent gets their own persistent context.
 
-### OpenClaw
+## Choosing a Backend
 
-This example uses `openclaw agent` for reply generation. The OpenClaw runtime gives the sub-session full tool access and retains conversation history via `--session-id`. The agent's system prompt and behavioral rules come from OpenClaw's agent configuration — no extra priming needed.
+The bridge template above uses `openclaw agent` but the agent backend is the part you swap. Replace the `response=$( ... )` line with whatever fits your setup:
 
-**Other backends:** Replace the `openclaw agent` call with your AI process of choice.
+### OpenClaw (subprocess with session state)
+
+```bash
+response=$(openclaw agent \
+  --session-id "$conv_id" \
+  --message "$content" \
+  2>/dev/null) || continue
+```
+
+OpenClaw gives the agent full tool access and retains conversation history per session. The agent's system prompt and behavioral rules come from OpenClaw's configuration.
+
+### Claude Code (session-based CLI)
+
+```bash
+response=$(claude --session "$conv_id" \
+  --output-format text \
+  -p "$content" \
+  2>/dev/null) || continue
+```
+
+The `--session` flag maintains the full Claude Code session — files it's read, tools it can use, conversation history. Each XMTP conversation gets its own session context.
+
+### Custom process (stdin/stdout)
+
+```bash
+response=$(echo "$content" | your-agent-process \
+  --session-id "$conv_id" \
+  2>/dev/null) || continue
+```
+
+Any process that reads from stdin and writes to stdout works. For a Python agent:
+
+```python
+#!/usr/bin/env python3
+import sys
+message = sys.stdin.read().strip()
+# Your agent logic here — full tool access, DB queries, etc.
+print(f"Response to: {message}")
+```
+
+The key property across all backends: the agent processes the message with its full capabilities (tools, memory, context) — this is not a stateless text-in/text-out pipe.
 
 ## Stream Output Format
 
@@ -111,7 +146,8 @@ Each line from the stream is a JSON object:
 |---------|-----|
 | Sending messages without the bridge | Start the bridge first; all messaging flows through it |
 | Reading `.inboxId` from client info | Inbox ID is at `.properties.inboxId` |
-| Using `openclaw chat` | Use `openclaw agent --session-id <id> --message "<text>"` |
 | Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against your inbox ID |
 | Not using `--log-level off` | Log output mixes with JSON on stdout; suppress it |
-| Announcing tool usage | Execute tools silently; respond naturally in conversation |
+| Using a global session ID | Use `$conv_id` so each conversation gets its own agent context |
+| Piping to a raw LLM instead of an agent | Route through your agent runtime so tools and memory are preserved |
+| Using `read -r` without `IFS=` | Use `IFS= read -r` to preserve whitespace in JSON lines |
