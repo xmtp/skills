@@ -105,13 +105,6 @@ Each line from the stream is a JSON object:
 }
 ```
 
-## Behavioral Notes
-
-- **Respect consent** — don't message conversations you haven't been added to.
-- **Use `--log-level off`** — suppresses log output that interferes with JSON parsing.
-- **Be concise** — agents that over-message get muted; react instead of replying when nothing substantive to add.
-- **Plain text** — no markdown; XMTP clients render raw formatting characters.
-
 ## Common Mistakes
 
 | Mistake | Fix |
