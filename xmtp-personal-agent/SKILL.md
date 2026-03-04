@@ -27,15 +27,26 @@ Requires Node 22+ and `jq` for JSON processing.
 xmtp init --env production
 ```
 
-Generates `~/.xmtp/.env` with your agent's keys.
+Generates `~/.xmtp/.env` with your wallet key, DB encryption key, and environment.
 
 ### Verify
 
 ```bash
-xmtp client info --json --env production 2>/dev/null | grep -v WARN | jq .
+xmtp client info --json --log-level off --env production
 ```
 
-> **Note:** The CLI outputs `WARN` lines to stdout (not stderr). For one-shot commands, pipe through `grep -v WARN`. For streaming commands, don't use `grep` in the pipe (it causes buffering) — validate JSON with `jq empty` instead.
+Returns:
+
+```json
+{
+  "properties": {
+    "address": "0x...",
+    "inboxId": "...",
+    "installationId": "...",
+    "isRegistered": true
+  }
+}
+```
 
 ## Running as an Agent
 
@@ -54,27 +65,24 @@ set -euo pipefail
 SESSION_ID="xmtp-agent-$$"
 
 # Get the agent's inbox ID for filtering own messages
-MY_INBOX_ID=$(xmtp client info --json --env production 2>/dev/null \
-  | grep -v WARN | jq -r '.inboxId')
+# Inbox ID is at .properties.inboxId in the JSON output
+MY_INBOX_ID=$(xmtp client info --json --log-level off --env production \
+  | jq -r '.properties.inboxId')
 
 [[ -z "$MY_INBOX_ID" ]] && echo "Failed to get inbox ID" >&2 && exit 1
 
-# Stream messages — WARN lines appear on stdout but aren't valid JSON,
-# so jq validation skips them. Don't use grep in the pipe (causes buffering).
-xmtp conversations stream-all-messages --json --env production 2>/dev/null \
+# Stream messages as ndjson — one JSON object per line
+xmtp conversations stream-all-messages --json --log-level off --env production \
   | while read -r event; do
-
-  # Skip non-JSON lines (e.g. WARN output)
-  echo "$event" | jq empty 2>/dev/null || continue
 
   conv_id=$(echo "$event" | jq -r '.conversationId // empty')
   sender=$(echo "$event" | jq -r '.senderInboxId // empty')
   content=$(echo "$event" | jq -r '.content // empty')
-  content_type=$(echo "$event" | jq -r '.contentType // empty')
+  content_type=$(echo "$event" | jq -r '.contentType.typeId // empty')
 
   # Skip own messages, empty events, and non-text content types
   [[ -z "$conv_id" || -z "$content" || "$sender" == "$MY_INBOX_ID" ]] && continue
-  [[ "$content_type" != *"text"* ]] && continue
+  [[ "$content_type" != "text" ]] && continue
 
   # Send to OpenClaw for a response
   response=$(openclaw agent \
@@ -90,13 +98,36 @@ done
 
 > This is a reference pattern, not production-grade. A production bridge should handle stream disconnects, message queuing, and concurrent conversations.
 
+### Stream Output Format
+
+Each line from `stream-all-messages --json` is a JSON object:
+
+```json
+{
+  "id": "message-id",
+  "conversationId": "conversation-id",
+  "senderInboxId": "sender-inbox-id",
+  "contentType": {
+    "authorityId": "xmtp.org",
+    "typeId": "text",
+    "versionMajor": 1,
+    "versionMinor": 0
+  },
+  "content": "Hello!",
+  "sentAt": "2026-03-04T04:14:36.849Z",
+  "deliveryStatus": 1,
+  "kind": 0
+}
+```
+
 ### How the Bridge Works
 
-1. Gets the agent's inbox ID for self-message filtering
+1. Gets the agent's inbox ID from `client info` at `.properties.inboxId`
 2. Streams all incoming messages as ndjson via `stream-all-messages`
 3. Filters out own messages by comparing `senderInboxId` to the agent's inbox ID
-4. Passes each message to `openclaw agent`, which returns plaintext
-5. Sends the reply back via `xmtp conversation send-text`
+4. Skips non-text content types (reactions, group updates, etc.)
+5. Passes each message to `openclaw agent`, which returns plaintext
+6. Sends the reply back via `xmtp conversation send-text`
 
 ## CLI Reference
 
@@ -123,10 +154,10 @@ xmtp conversations create-group 0xAddr1 0xAddr2 --name "Group Name" --json --env
 ### Stream messages
 
 ```bash
-xmtp conversations stream-all-messages --json --env production
+xmtp conversations stream-all-messages --json --log-level off --env production
 ```
 
-Outputs ndjson — each line has `conversationId`, `senderInboxId`, and `content`.
+Outputs ndjson — each line has `conversationId`, `senderInboxId`, `contentType.typeId`, and `content`.
 
 ### Send text
 
@@ -159,6 +190,7 @@ xmtp client --help
 
 - **Respect consent** — check consent state before sending; don't message conversations you haven't been added to.
 - **Use `--json`** — always for programmatic output; human-readable is for debugging only.
+- **Use `--log-level off`** — suppresses log output that can interfere with JSON parsing.
 - **Sync first** — `xmtp conversations sync-all --env production` before reading history.
 - **Be concise** — agents that over-message get muted; react instead of replying when nothing substantive to add.
 - **Plain text** — no markdown; XMTP clients render raw formatting characters.
@@ -169,9 +201,10 @@ xmtp client --help
 |---------|-----|
 | Sending messages before starting bridge | Set up the bridge first; all messaging flows through it |
 | Missing `--env production` | Always pass `--env production` for live network; default is dev |
+| Reading `.inboxId` from client info | Inbox ID is at `.properties.inboxId` in the JSON output |
 | Using `openclaw chat` | Use `openclaw agent --session-id <id> --message "<text>"`; returns plaintext |
-| Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against agent's inbox ID from `client info` |
-| WARN lines breaking `jq` | WARN goes to stdout; use `grep -v WARN` for one-shot commands, `jq empty` validation for streams (grep causes buffering) |
+| Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against agent's inbox ID |
+| Not using `--log-level off` | Log output can mix with JSON on stdout; suppress with `--log-level off` |
 | Sending without `can-message` check | Verify address is reachable before creating a conversation |
 | Not syncing before reading history | Run `xmtp conversations sync-all` before `messages` commands |
 | Parsing human-readable output | Use `--json` flag for all programmatic operations |
