@@ -35,7 +35,7 @@ Generates `~/.xmtp/.env` with your agent's keys.
 xmtp client info --json --env production 2>/dev/null | grep -v WARN | jq .
 ```
 
-> **Note:** The CLI may output `WARN` lines to stdout before JSON. Always pipe through `grep -v WARN` when parsing JSON output.
+> **Note:** The CLI outputs `WARN` lines to stdout (not stderr), which break JSON parsing. Always use `2>&1 | grep -v WARN` when parsing JSON output.
 
 ## Running as an Agent
 
@@ -54,22 +54,29 @@ set -euo pipefail
 SESSION_ID="xmtp-agent-$$"
 
 # Get the agent's inbox ID for filtering own messages
-MY_INBOX_ID=$(xmtp client info --json --env production 2>/dev/null \
+# WARN lines appear on stdout, not stderr — merge and filter
+MY_INBOX_ID=$(xmtp client info --json --env production 2>&1 \
   | grep -v WARN \
   | jq -r '.inboxId')
 
 [[ -z "$MY_INBOX_ID" ]] && echo "Failed to get inbox ID" >&2 && exit 1
 
-xmtp conversations stream-all-messages --json --env production 2>/dev/null | while read -r event; do
-  # Skip WARN lines that aren't JSON
-  [[ "$event" == WARN* ]] && continue
+# Stream messages, merge stderr, filter WARN lines, validate JSON
+xmtp conversations stream-all-messages --json --env production 2>&1 \
+  | grep -v WARN \
+  | while read -r event; do
+
+  # Validate JSON before parsing
+  echo "$event" | jq empty 2>/dev/null || continue
 
   conv_id=$(echo "$event" | jq -r '.conversationId // empty')
   sender=$(echo "$event" | jq -r '.senderInboxId // empty')
   content=$(echo "$event" | jq -r '.content // empty')
+  content_type=$(echo "$event" | jq -r '.contentType // empty')
 
-  # Skip own messages or empty events
+  # Skip own messages, empty events, and non-text content types
   [[ -z "$conv_id" || -z "$content" || "$sender" == "$MY_INBOX_ID" ]] && continue
+  [[ "$content_type" != *"text"* ]] && continue
 
   # Send to OpenClaw for a response
   response=$(openclaw agent \
@@ -166,7 +173,7 @@ xmtp client --help
 | Missing `--env production` | Always pass `--env production` for live network; default is dev |
 | Using `openclaw chat` | Use `openclaw agent --session-id <id> --message "<text>"`; returns plaintext |
 | Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against agent's inbox ID from `client info` |
-| WARN lines breaking `jq` | Pipe through `grep -v WARN` or skip lines starting with `WARN` |
+| WARN lines breaking `jq` | WARN goes to stdout, not stderr; use `2>&1 | grep -v WARN` to filter |
 | Sending without `can-message` check | Verify address is reachable before creating a conversation |
 | Not syncing before reading history | Run `xmtp conversations sync-all` before `messages` commands |
 | Parsing human-readable output | Use `--json` flag for all programmatic operations |
