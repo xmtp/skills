@@ -9,7 +9,7 @@ Skills are folders of instructions and resources that AI coding agents load dyna
 | Skill | Description |
 |-------|-------------|
 | [xmtp-docs](./xmtp-docs) | Query XMTP documentation for current SDK patterns and methods |
-| [xmtp-personal-agent](./xmtp-personal-agent) | Build a personal agent with its own XMTP identity using the CLI |
+| [xmtp-personal-agent](./xmtp-personal-agent) | Connect your agent to XMTP so it can message people on the open network |
 
 ---
 
@@ -26,11 +26,11 @@ Query current XMTP documentation to get accurate SDK patterns before writing cod
 
 ### xmtp-personal-agent
 
-Build a personal agent with its own identity on the XMTP network. Your agent can message people, join groups, and respond to conversations using the XMTP CLI.
+Connect your agent to XMTP so it can message people on the open network. Your agent gets its own identity and can join groups, respond to conversations, and manage messages using the XMTP CLI.
 
 **Use when:**
-- Setting up an agent that messages people on XMTP
-- Listening and responding to conversations as an agent
+- Giving your agent its own XMTP identity
+- Listening and responding to conversations via the XMTP CLI
 - Managing conversations and groups programmatically
 
 **How it works:** Provides CLI setup, a bridge script for listening and responding (with OpenClaw), and a command reference for managing conversations

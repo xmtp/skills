@@ -1,15 +1,15 @@
 ---
 name: xmtp-personal-agent
 description: >
-  Build a personal agent with its own XMTP identity using the CLI.
-  Use when: (1) Setting up an agent that messages people on XMTP,
-  (2) Listening and responding to conversations as an agent,
+  Connect your agent to XMTP so it can message people on the open network.
+  Use when: (1) Giving your agent its own XMTP identity,
+  (2) Listening and responding to conversations via the XMTP CLI,
   (3) Managing conversations and groups programmatically.
 ---
 
-# XMTP Agent
+# XMTP Personal Agent
 
-Build a personal agent on XMTP — the open protocol for secure, decentralized messaging. Your agent gets its own identity on the network and can message people, join groups, and respond to conversations using the XMTP CLI.
+Connect your agent to XMTP — the open protocol for secure, decentralized messaging. Your agent gets its own identity on the network and can message people, join groups, and respond to conversations using the XMTP CLI.
 
 ## Getting Started
 
