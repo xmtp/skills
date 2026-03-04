@@ -39,9 +39,13 @@ xmtp client info --json --env production 2>/dev/null | grep -v WARN | jq .
 
 ## Running as an Agent
 
-The recommended way to operate as a real-time agent is through a bridge script that streams messages and routes them to an AI for responses. The bridge handles the event loop — your agent just responds to messages.
+**You must use a bridge script.** Calling CLI commands individually creates race conditions — messages arrive while you're processing, and you lose ordering. The bridge script is the correct way to participate in a conversation: it handles the event loop, and your AI backend just responds to messages.
 
-### Bridge Script (OpenClaw)
+### Bridge Script
+
+This bridge uses `openclaw agent` for reply generation. The OpenClaw runtime gives the sub-session full tool access and retains conversation history via `--session-id`. No extra priming needed — the agent's system prompt and behavioral rules come from OpenClaw's agent configuration.
+
+**Other backends:** Replace the `openclaw agent` call with your AI process of choice.
 
 ```bash
 #!/bin/bash
@@ -86,11 +90,8 @@ done
 1. Gets the agent's inbox ID for self-message filtering
 2. Streams all incoming messages as ndjson via `stream-all-messages`
 3. Filters out own messages by comparing `senderInboxId` to the agent's inbox ID
-4. Passes each message to OpenClaw via `openclaw agent --json`
-5. Extracts the reply from the `.reply` field in OpenClaw's JSON response
-6. Sends the reply back via `xmtp conversation send-text`
-
-The agent's system prompt and behavioral rules come from OpenClaw's agent configuration, not from CLI flags.
+4. Passes each message to `openclaw agent --json`, which returns a `.reply` field
+5. Sends the reply back via `xmtp conversation send-text`
 
 ## CLI Commands
 
