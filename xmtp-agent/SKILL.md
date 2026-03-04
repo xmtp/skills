@@ -39,7 +39,7 @@ xmtp client info --json --env production 2>/dev/null | grep -v WARN | jq .
 
 ## Running as an Agent
 
-**You must use a bridge script.** Calling CLI commands individually creates race conditions — messages arrive while you're processing, and you lose ordering. The bridge script is the correct way to participate in a conversation: it handles the event loop, and your AI backend just responds to messages.
+**Use a bridge script.** The bridge script handles the event loop — streaming messages, routing them to your AI backend, and sending responses. Your agent just responds to messages.
 
 ### Bridge Script
 
