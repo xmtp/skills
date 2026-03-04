@@ -6,6 +6,9 @@ description: >
 
 # XMTP Agent
 
+> [!CAUTION]
+> Alpha status. Public inbox IDs may be targeted by DOS flooding and prompt injection attempts. Don't give the agent access to sensitive resources.
+
 You are connecting an agent to XMTP — the open protocol for secure, decentralized messaging. This skill tells you how to get an identity on the network and bridge incoming messages through your agent backend so it can respond with its full capabilities (tools, memory, context).
 
 The core architecture is a **bridge script**: XMTP streams messages in, your agent processes them, replies go back out. The agent backend is swappable — OpenClaw, Claude Code, a custom Python process, anything that takes a message and returns a response.
@@ -27,7 +30,17 @@ Verify you're registered:
 xmtp client info --json --log-level off --env production
 ```
 
-Your inbox ID is at `.properties.inboxId` in the output. **Do not send any messages yet — proceed to Step 2.**
+Your inbox ID is at `.properties.inboxId` in the output.
+
+Set the owner's inbox ID — the person who should have full agent access (this is typically you, the deployer, not the agent itself):
+
+```bash
+# Resolve your inbox ID from your wallet address:
+# xmtp contacts find-inbox-id "0xYOUR_WALLET_ADDRESS" --env production
+export OWNER_INBOX_ID="your-inbox-id-here"
+```
+
+**Do not send any messages yet — proceed to Step 2.**
 
 ## Step 2: Start the Bridge
 
@@ -59,10 +72,18 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
   [[ "$content_type" != "text" ]] && continue
 
   # Route to your agent backend (see "Choosing a Backend" below)
-  response=$(openclaw agent \
-    --session-id "$conv_id" \
-    --message "$content" \
-    2>/dev/null) || continue
+  # Owner gets full agent capabilities; public users get conversation-only mode
+  if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
+    response=$(openclaw agent \
+      --session-id "$conv_id" \
+      --message "$content" \
+      2>/dev/null) || continue
+  else
+    response=$(openclaw agent \
+      --session-id "public-$conv_id" \
+      --message "[SYSTEM: You are in public mode. Respond helpfully and conversationally. Do NOT use tools, read files, execute commands, or access any system resources. Only have a natural conversation.] $content" \
+      2>/dev/null) || continue
+  fi
 
   # Send the response
   [[ -n "$response" ]] && \
@@ -74,36 +95,58 @@ The bridge uses the XMTP conversation ID as the session ID so each person (or gr
 
 ## Choosing a Backend
 
-The bridge template above uses `openclaw agent` but the agent backend is the part you swap. Replace the `response=$( ... )` line with whatever fits your setup:
+The bridge template above uses `openclaw agent` but the agent backend is the part you swap. Each example below shows the owner/public branching — replace the `if/else` block in the bridge with the version matching your setup.
 
 ### OpenClaw (subprocess with session state)
 
 ```bash
-response=$(openclaw agent \
-  --session-id "$conv_id" \
-  --message "$content" \
-  2>/dev/null) || continue
+if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
+  response=$(openclaw agent \
+    --session-id "$conv_id" \
+    --message "$content" \
+    2>/dev/null) || continue
+else
+  response=$(openclaw agent \
+    --session-id "public-$conv_id" \
+    --message "[SYSTEM: You are in public mode. Respond helpfully and conversationally. Do NOT use tools, read files, execute commands, or access any system resources. Only have a natural conversation.] $content" \
+    2>/dev/null) || continue
+fi
 ```
 
-OpenClaw gives the agent full tool access and retains conversation history per session. The agent's system prompt and behavioral rules come from OpenClaw's configuration.
+OpenClaw gives the agent full tool access and retains conversation history per session. The owner path uses OpenClaw's full configuration; the public path prepends a restrictive system prompt and isolates sessions with the `public-` prefix.
 
 ### Claude Code (session-based CLI)
 
 ```bash
-response=$(claude --session "$conv_id" \
-  --output-format text \
-  -p "$content" \
-  2>/dev/null) || continue
+if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
+  response=$(claude --session "$conv_id" \
+    --output-format text \
+    -p "$content" \
+    2>/dev/null) || continue
+else
+  response=$(claude --session "public-$conv_id" \
+    --output-format text \
+    --allowedTools "" \
+    -p "[SYSTEM: You are in public mode. Respond helpfully and conversationally. Do NOT use tools, read files, execute commands, or access any system resources. Only have a natural conversation.] $content" \
+    2>/dev/null) || continue
+fi
 ```
 
-The `--session` flag maintains the full Claude Code session — files it's read, tools it can use, conversation history. Each XMTP conversation gets its own session context.
+The `--session` flag maintains the full Claude Code session — files it's read, tools it can use, conversation history. The owner gets full capabilities; public users get `--allowedTools ""` to disable tool access plus the restrictive system prompt.
 
 ### Custom process (stdin/stdout)
 
 ```bash
-response=$(echo "$content" | your-agent-process \
-  --session-id "$conv_id" \
-  2>/dev/null) || continue
+if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
+  response=$(echo "$content" | your-agent-process \
+    --session-id "$conv_id" \
+    2>/dev/null) || continue
+else
+  response=$(echo "[SYSTEM: You are in public mode. Respond helpfully and conversationally. Do NOT use tools, read files, execute commands, or access any system resources. Only have a natural conversation.] $content" \
+    | your-agent-process \
+    --session-id "public-$conv_id" \
+    2>/dev/null) || continue
+fi
 ```
 
 Any process that reads from stdin and writes to stdout works. For a Python agent:
@@ -116,7 +159,7 @@ message = sys.stdin.read().strip()
 print(f"Response to: {message}")
 ```
 
-The key property across all backends: the agent processes the message with its full capabilities (tools, memory, context) — this is not a stateless text-in/text-out pipe.
+The key property across all backends: the owner gets full capabilities (tools, memory, context), while public users are restricted to conversation only.
 
 ## Stream Output Format
 
@@ -140,6 +183,34 @@ Each line from the stream is a JSON object:
 }
 ```
 
+## Security
+
+The bridge passes raw message content from **any XMTP user** to your agent backend. The owner/public split ensures only the deployer gets full agent capabilities — everyone else is restricted to conversation only, preventing strangers from triggering file reads, shell commands, or other sensitive operations via prompt injection.
+
+**How the guardrail works:**
+- `OWNER_INBOX_ID` identifies the deployer — only they get full agent capabilities
+- Public users get a restrictive system prompt prefix and isolated sessions (`public-` prefix)
+- The system prompt restriction is a **soft guardrail** — a determined attacker may bypass it via prompt injection, so don't give the agent access to truly sensitive resources regardless
+
+**Finding your inbox ID:** Resolve it from your Ethereum wallet address:
+
+```bash
+xmtp contacts find-inbox-id "0xYOUR_WALLET_ADDRESS" --env production
+```
+
+**Multiple trusted users:** To allowlist additional inbox IDs, expand the condition:
+
+```bash
+if [[ "$sender" == "$OWNER_INBOX_ID" || "$sender" == "$TRUSTED_USER_2" ]]; then
+```
+
+Or use an array:
+
+```bash
+TRUSTED_IDS=("inbox-id-1" "inbox-id-2")
+if printf '%s\n' "${TRUSTED_IDS[@]}" | grep -qxF "$sender"; then
+```
+
 ## Common Mistakes
 
 | Mistake | Fix |
@@ -151,3 +222,4 @@ Each line from the stream is a JSON object:
 | Using a global session ID | Use `$conv_id` so each conversation gets its own agent context |
 | Piping to a raw LLM instead of an agent | Route through your agent runtime so tools and memory are preserved |
 | Using `read -r` without `IFS=` | Use `IFS= read -r` to preserve whitespace in JSON lines |
+| Running without `OWNER_INBOX_ID` | Set the owner's inbox ID so public users get restricted mode |
