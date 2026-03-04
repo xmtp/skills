@@ -39,7 +39,7 @@ xmtp client info --json --env production 2>/dev/null | grep -v WARN | jq .
 
 ## Running as an Agent
 
-**Use a bridge script.** The bridge script handles the event loop — streaming messages, routing them to your AI backend, and sending responses. Your agent just responds to messages.
+> **Do not send messages using individual CLI commands.** Set up the bridge script first. The bridge handles streaming, responding, and self-message filtering in one process. Start the bridge, then all messaging flows through it.
 
 ### Bridge Script
 
@@ -93,9 +93,9 @@ done
 4. Passes each message to `openclaw agent --json`, which returns a `.reply` field
 5. Sends the reply back via `xmtp conversation send-text`
 
-## CLI Commands
+## CLI Reference
 
-These are the building blocks the bridge uses. You can also use them directly for one-off operations.
+Individual commands used by the bridge. Use these directly only for setup tasks (checking reachability, creating conversations) — not for sending messages during a conversation.
 
 ### Check reachability
 
@@ -162,6 +162,7 @@ xmtp client --help
 
 | Mistake | Fix |
 |---------|-----|
+| Sending messages before starting bridge | Set up the bridge first; all messaging flows through it |
 | Missing `--env production` | Always pass `--env production` for live network; default is dev |
 | Using `openclaw chat` | Use `openclaw agent --session-id <id> --message "<text>" --json` |
 | Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against agent's inbox ID from `client info` |
