@@ -9,7 +9,7 @@ Skills are folders of instructions and resources that AI coding agents load dyna
 | Skill | Description |
 |-------|-------------|
 | [xmtp-docs](./xmtp-docs) | Query XMTP documentation for current SDK patterns and methods |
-| [xmtp-agent](./xmtp-agent) | Build a personal agent with its own XMTP identity using the CLI |
+| [xmtp-personal-agent](./xmtp-personal-agent) | Build a personal agent with its own XMTP identity using the CLI |
 
 ---
 
@@ -24,7 +24,7 @@ Query current XMTP documentation to get accurate SDK patterns before writing cod
 
 **How it works:** Uses WebFetch to query specific documentation pages via `docs.xmtp.org/llms.txt` index
 
-### xmtp-agent
+### xmtp-personal-agent
 
 Build a personal agent with its own identity on the XMTP network. Your agent can message people, join groups, and respond to conversations using the XMTP CLI.
 

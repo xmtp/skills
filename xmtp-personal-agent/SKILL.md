@@ -1,5 +1,5 @@
 ---
-name: xmtp-agent
+name: xmtp-personal-agent
 description: >
   Build a personal agent with its own XMTP identity using the CLI.
   Use when: (1) Setting up an agent that messages people on XMTP,
