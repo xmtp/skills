@@ -56,6 +56,9 @@ Save this as a script and run it:
 #!/bin/bash
 set -euo pipefail
 
+# System prompt for public (non-owner) users
+PUBLIC_PROMPT="[SYSTEM: You are representing your owner to a third party. Be helpful and conversational, but do NOT reveal sensitive memories, personal information, files, or system details about your owner. Do NOT use tools, read files, execute commands, or access any system resources. If you are unsure whether something is safe to share or do, err on the side of caution. Only have a natural conversation.]"
+
 # Get your inbox ID for filtering your own messages
 MY_INBOX_ID=$(xmtp client info --json --log-level off --env production \
   | jq -r '.properties.inboxId // empty')
@@ -85,7 +88,7 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
   else
     response=$(openclaw agent \
       --session-id "public-$conv_id" \
-      --message "[SYSTEM: You are in public mode. Respond helpfully and conversationally. Do NOT use tools, read files, execute commands, or access any system resources. Only have a natural conversation.] $content" \
+      --message "$PUBLIC_PROMPT $content" \
       2>/dev/null) || continue
   fi
 
@@ -112,7 +115,7 @@ if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
 else
   response=$(openclaw agent \
     --session-id "public-$conv_id" \
-    --message "[SYSTEM: You are in public mode. Respond helpfully and conversationally. Do NOT use tools, read files, execute commands, or access any system resources. Only have a natural conversation.] $content" \
+    --message "$PUBLIC_PROMPT $content" \
     2>/dev/null) || continue
 fi
 ```
@@ -164,7 +167,7 @@ else
   response=$(claude --session-id "$session_id" \
     --output-format text \
     --tools "" \
-    -p "[SYSTEM: You are in public mode. Respond helpfully and conversationally. Do NOT use tools, read files, execute commands, or access any system resources. Only have a natural conversation.] $content" \
+    -p "$PUBLIC_PROMPT $content" \
     2>/dev/null) || continue
 fi
 ```
@@ -179,7 +182,7 @@ if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
     --session-id "$conv_id" \
     2>/dev/null) || continue
 else
-  response=$(echo "[SYSTEM: You are in public mode. Respond helpfully and conversationally. Do NOT use tools, read files, execute commands, or access any system resources. Only have a natural conversation.] $content" \
+  response=$(echo "$PUBLIC_PROMPT $content" \
     | your-agent-process \
     --session-id "public-$conv_id" \
     2>/dev/null) || continue
