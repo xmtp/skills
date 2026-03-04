@@ -117,7 +117,32 @@ else
 fi
 ```
 
-OpenClaw gives the agent full tool access and retains conversation history per session. The owner path uses OpenClaw's full configuration; the public path prepends a restrictive system prompt and isolates sessions with the `public-` prefix.
+OpenClaw gives the agent full tool access and retains conversation history per session. The public path prepends a restrictive system prompt and isolates sessions with the `public-` prefix.
+
+**Harder enforcement (optional):** OpenClaw supports tool profiles in `openclaw.json`. Define a second agent with `tools.profile: "messaging"` (messaging + session tools only, no filesystem or shell) and route public users to it instead of relying on the system prompt alone:
+
+```json
+{
+  "agents": {
+    "list": [
+      { "name": "owner-agent", "tools": { "profile": "full" } },
+      { "name": "public-agent", "tools": { "profile": "messaging" } }
+    ]
+  }
+}
+```
+
+Then route by agent name in the bridge:
+
+```bash
+if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
+  response=$(openclaw agent --agent owner-agent \
+    --session-id "$conv_id" --message "$content" 2>/dev/null) || continue
+else
+  response=$(openclaw agent --agent public-agent \
+    --session-id "public-$conv_id" --message "$content" 2>/dev/null) || continue
+fi
+```
 
 ### Claude Code (session-based CLI)
 
