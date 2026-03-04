@@ -56,10 +56,18 @@ Save this as a script and run it:
 #!/bin/bash
 set -euo pipefail
 
-# System prompt for public (non-owner) users — customize this to control
-# what public users can access. For example, you might allow specific tools
-# or share certain information while keeping other things private.
-PUBLIC_PROMPT="[SYSTEM: You are representing your owner to a third party. Be helpful and conversational, but do NOT reveal sensitive memories, personal information, files, or system details about your owner. Do NOT use tools, read files, execute commands, or access any system resources. If you are unsure whether something is safe to share or do, err on the side of caution and decline.]"
+# Public-mode system prompt — read from file so you can edit it without restarting
+PUBLIC_PROMPT_FILE="./public-prompt.md"
+if [[ ! -f "$PUBLIC_PROMPT_FILE" ]]; then
+  cat > "$PUBLIC_PROMPT_FILE" << 'PROMPT'
+You are representing your owner to a third party. Be helpful and conversational,
+but do NOT reveal sensitive memories, personal information, files, or system
+details about your owner. Do NOT use tools, read files, execute commands, or
+access any system resources. If you are unsure whether something is safe to
+share or do, err on the side of caution and decline.
+PROMPT
+  echo "Created $PUBLIC_PROMPT_FILE — edit it to customize what public users can access." >&2
+fi
 
 # Get your inbox ID for filtering your own messages
 MY_INBOX_ID=$(xmtp client info --json --log-level off --env production \
@@ -90,7 +98,7 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
   else
     response=$(openclaw agent \
       --session-id "public-$conv_id" \
-      --message "$PUBLIC_PROMPT $content" \
+      --message "[SYSTEM: $(cat "$PUBLIC_PROMPT_FILE")] $content" \
       2>/dev/null) || continue
   fi
 
@@ -117,7 +125,7 @@ if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
 else
   response=$(openclaw agent \
     --session-id "public-$conv_id" \
-    --message "$PUBLIC_PROMPT $content" \
+    --message "[SYSTEM: $(cat "$PUBLIC_PROMPT_FILE")] $content" \
     2>/dev/null) || continue
 fi
 ```
@@ -169,7 +177,7 @@ else
   response=$(claude --session-id "$session_id" \
     --output-format text \
     --tools "" \
-    -p "$PUBLIC_PROMPT $content" \
+    -p "[SYSTEM: $(cat "$PUBLIC_PROMPT_FILE")] $content" \
     2>/dev/null) || continue
 fi
 ```
@@ -184,7 +192,7 @@ if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
     --session-id "$conv_id" \
     2>/dev/null) || continue
 else
-  response=$(echo "$PUBLIC_PROMPT $content" \
+  response=$(echo "[SYSTEM: $(cat "$PUBLIC_PROMPT_FILE")] $content" \
     | your-agent-process \
     --session-id "public-$conv_id" \
     2>/dev/null) || continue
