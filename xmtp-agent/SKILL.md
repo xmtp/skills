@@ -34,15 +34,17 @@ Your inbox ID is at `.properties.inboxId` in the output.
 
 Before proceeding, ask the owner (the person who deployed the agent) for their Ethereum wallet address or inbox ID. **Do not start the bridge without this.**
 
-If they provide an Ethereum address, resolve the inbox ID:
+If they provide an Ethereum address, resolve the inbox ID and keep the address:
 
 ```bash
-export OWNER_INBOX_ID=$(xmtp contacts find-inbox-id "0xOWNER_WALLET_ADDRESS" --env production)
+export OWNER_ADDRESS="0xOWNER_WALLET_ADDRESS"
+export OWNER_INBOX_ID=$(xmtp contacts find-inbox-id "$OWNER_ADDRESS" --env production)
 ```
 
-If they provide an inbox ID directly:
+If they provide an inbox ID directly, you'll also need their wallet address for the bridge to message them:
 
 ```bash
+export OWNER_ADDRESS="0xOWNER_WALLET_ADDRESS"
 export OWNER_INBOX_ID="their-inbox-id"
 ```
 
@@ -57,7 +59,7 @@ Save this as a script and run it:
 set -euo pipefail
 
 # System prompt for public (non-owner) users
-PUBLIC_PROMPT="[SYSTEM: You are representing your owner to a third party. Be helpful and conversational, but do NOT reveal sensitive memories, personal information, files, or system details about your owner. Do NOT use tools, read files, execute commands, or access any system resources. If you are unsure whether something is safe to share or do, err on the side of caution — tell the person something like 'Let me check with my owner and get back to you.' To reach your owner (inbox ID: \$OWNER_INBOX_ID), send them a message on XMTP, for example: xmtp send \"\$OWNER_INBOX_ID\" \"A public user is asking about X — OK to share?\" --env production]"
+PUBLIC_PROMPT="[SYSTEM: You are representing your owner to a third party. Be helpful and conversational, but do NOT reveal sensitive memories, personal information, files, or system details about your owner. Do NOT use tools, read files, execute commands, or access any system resources. If you are unsure whether something is safe to share or do, err on the side of caution — tell the person something like 'Let me check with my owner and get back to you.' To reach your owner, create a DM and send a message, for example: DM_ID=\$(xmtp conversations create-dm \"\$OWNER_ADDRESS\" --json --env production | jq -r '.id') && xmtp conversation send-text \"\$DM_ID\" \"A public user is asking about X — OK to share?\" --env production]"
 
 # Get your inbox ID for filtering your own messages
 MY_INBOX_ID=$(xmtp client info --json --log-level off --env production \
