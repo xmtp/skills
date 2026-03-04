@@ -35,7 +35,7 @@ Generates `~/.xmtp/.env` with your agent's keys.
 xmtp client info --json --env production 2>/dev/null | grep -v WARN | jq .
 ```
 
-> **Note:** The CLI outputs `WARN` lines to stdout (not stderr), which break JSON parsing. Always pipe through `grep -v WARN` when parsing JSON output.
+> **Note:** The CLI outputs `WARN` lines to stdout (not stderr). For one-shot commands, pipe through `grep -v WARN`. For streaming commands, don't use `grep` in the pipe (it causes buffering) — validate JSON with `jq empty` instead.
 
 ## Running as an Agent
 
@@ -54,17 +54,17 @@ set -euo pipefail
 SESSION_ID="xmtp-agent-$$"
 
 # Get the agent's inbox ID for filtering own messages
-# WARN lines appear on stdout, not stderr — merge and filter
-MY_INBOX_ID=$(xmtp client info --json --env production | grep -v WARN \
-  | jq -r '.inboxId')
+MY_INBOX_ID=$(xmtp client info --json --env production 2>/dev/null \
+  | grep -v WARN | jq -r '.inboxId')
 
 [[ -z "$MY_INBOX_ID" ]] && echo "Failed to get inbox ID" >&2 && exit 1
 
-# Stream messages, merge stderr, filter WARN lines, validate JSON
-xmtp conversations stream-all-messages --json --env production | grep -v WARN \
+# Stream messages — WARN lines appear on stdout but aren't valid JSON,
+# so jq validation skips them. Don't use grep in the pipe (causes buffering).
+xmtp conversations stream-all-messages --json --env production 2>/dev/null \
   | while read -r event; do
 
-  # Validate JSON before parsing
+  # Skip non-JSON lines (e.g. WARN output)
   echo "$event" | jq empty 2>/dev/null || continue
 
   conv_id=$(echo "$event" | jq -r '.conversationId // empty')
@@ -171,7 +171,7 @@ xmtp client --help
 | Missing `--env production` | Always pass `--env production` for live network; default is dev |
 | Using `openclaw chat` | Use `openclaw agent --session-id <id> --message "<text>"`; returns plaintext |
 | Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against agent's inbox ID from `client info` |
-| WARN lines breaking `jq` | WARN goes to stdout, not stderr; pipe through `grep -v WARN` |
+| WARN lines breaking `jq` | WARN goes to stdout; use `grep -v WARN` for one-shot commands, `jq empty` validation for streams (grep causes buffering) |
 | Sending without `can-message` check | Verify address is reachable before creating a conversation |
 | Not syncing before reading history | Run `xmtp conversations sync-all` before `messages` commands |
 | Parsing human-readable output | Use `--json` flag for all programmatic operations |
