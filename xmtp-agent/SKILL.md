@@ -32,15 +32,19 @@ xmtp client info --json --log-level off --env production
 
 Your inbox ID is at `.properties.inboxId` in the output.
 
-Set the owner's inbox ID — the person who should have full agent access (this is typically you, the deployer, not the agent itself):
+Before proceeding, ask the owner (the person who deployed the agent) for their Ethereum wallet address or inbox ID. **Do not start the bridge without this.**
+
+If they provide an Ethereum address, resolve the inbox ID:
 
 ```bash
-# Resolve your inbox ID from your wallet address:
-# xmtp contacts find-inbox-id "0xYOUR_WALLET_ADDRESS" --env production
-export OWNER_INBOX_ID="your-inbox-id-here"
+export OWNER_INBOX_ID=$(xmtp contacts find-inbox-id "0xOWNER_WALLET_ADDRESS" --env production)
 ```
 
-**Do not send any messages yet — proceed to Step 2.**
+If they provide an inbox ID directly:
+
+```bash
+export OWNER_INBOX_ID="their-inbox-id"
+```
 
 ## Step 2: Start the Bridge
 
@@ -117,22 +121,30 @@ OpenClaw gives the agent full tool access and retains conversation history per s
 
 ### Claude Code (session-based CLI)
 
+Claude Code requires `--session-id` to be a valid UUID. Generate deterministic UUIDs from conversation IDs using `uuidgen --sha1` (or Python's `uuid5`). Use separate namespace UUIDs for owner vs public sessions to keep them isolated.
+
 ```bash
+# Namespace UUIDs for deterministic session IDs (generate your own with uuidgen)
+OWNER_NS="e1a2b3c4-d5e6-7f80-9a0b-1c2d3e4f5a6b"
+PUBLIC_NS="f6b5a4e3-d2c1-0b9a-8f7e-6d5c4b3a2f1e"
+
 if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
-  response=$(claude --session "$conv_id" \
+  session_id=$(python3 -c "import uuid; print(uuid.uuid5(uuid.UUID('$OWNER_NS'), '$conv_id'))")
+  response=$(claude --session-id "$session_id" \
     --output-format text \
     -p "$content" \
     2>/dev/null) || continue
 else
-  response=$(claude --session "public-$conv_id" \
+  session_id=$(python3 -c "import uuid; print(uuid.uuid5(uuid.UUID('$PUBLIC_NS'), '$conv_id'))")
+  response=$(claude --session-id "$session_id" \
     --output-format text \
-    --allowedTools "" \
+    --tools "" \
     -p "[SYSTEM: You are in public mode. Respond helpfully and conversationally. Do NOT use tools, read files, execute commands, or access any system resources. Only have a natural conversation.] $content" \
     2>/dev/null) || continue
 fi
 ```
 
-The `--session` flag maintains the full Claude Code session — files it's read, tools it can use, conversation history. The owner gets full capabilities; public users get `--allowedTools ""` to disable tool access plus the restrictive system prompt.
+The `--session-id` flag maintains the full Claude Code session — files it's read, tools it can use, conversation history. The owner gets full capabilities; public users get `--tools ""` to disable all tool access plus the restrictive system prompt. Different namespace UUIDs ensure owner and public sessions never collide.
 
 ### Custom process (stdin/stdout)
 
@@ -189,7 +201,7 @@ The bridge passes raw message content from **any XMTP user** to your agent backe
 
 **How the guardrail works:**
 - `OWNER_INBOX_ID` identifies the deployer — only they get full agent capabilities
-- Public users get a restrictive system prompt prefix and isolated sessions (`public-` prefix)
+- Public users get a restrictive system prompt prefix and isolated sessions
 - The system prompt restriction is a **soft guardrail** — a determined attacker may bypass it via prompt injection, so don't give the agent access to truly sensitive resources regardless
 
 **Finding your inbox ID:** Resolve it from your Ethereum wallet address:
