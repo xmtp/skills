@@ -1,16 +1,16 @@
 ---
-name: xmtp-personal-agent
+name: xmtp-agent
 description: >
   Connect a running agent (OpenClaw, Claude Code, LangChain, custom Python, any agent runtime) to XMTP messaging so people can DM it and get responses that use the agent's full capabilities — tools, memory, session context. Provides the complete bridge pattern: XMTP CLI setup, identity registration, streaming incoming messages, routing through your agent backend, and sending replies back. Use this skill whenever someone wants to make their agent reachable over XMTP, write a bridge or listener script between an agent process and XMTP, set up xmtp init and stream-all-messages for an agent, have their agent respond to XMTP conversations continuously, wire any agent runtime to the XMTP open messaging network, or pipe XMTP messages through stdin/stdout to an agent process. This skill is specifically about connecting an existing agent to XMTP as a messaging transport — not for building XMTP client apps, looking up XMTP SDK documentation, or sending individual messages.
 ---
 
-# XMTP Personal Agent
+# XMTP Agent
 
 You are connecting an agent to XMTP — the open protocol for secure, decentralized messaging. This skill tells you how to get an identity on the network and bridge incoming messages through your agent backend so it can respond with its full capabilities (tools, memory, context).
 
 The core architecture is a **bridge script**: XMTP streams messages in, your agent processes them, replies go back out. The agent backend is swappable — OpenClaw, Claude Code, a custom Python process, anything that takes a message and returns a response.
 
-> **Complete both steps before sending or receiving any messages.** Step 1 creates your XMTP identity. Step 2 starts the bridge. You cannot send messages until the bridge is running.
+> **Always set up the full bridge — even if the user just asks to "send a message" or "test" messaging.** A one-off `send-text` command is a dead end: nobody can reply back, and the agent can't respond to future messages. The goal is always an ongoing, two-way conversation. Complete both steps below so the agent is continuously reachable.
 
 ## Step 1: Install and Initialize
 
@@ -144,7 +144,7 @@ Each line from the stream is a JSON object:
 
 | Mistake | Fix |
 |---------|-----|
-| Sending messages without the bridge | Start the bridge first; all messaging flows through it |
+| Sending a one-off message with `send-text` | Always set up the full bridge — even for "just a test". One-off sends are dead ends with no way to receive replies |
 | Reading `.inboxId` from client info | Inbox ID is at `.properties.inboxId` |
 | Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against your inbox ID |
 | Not using `--log-level off` | Log output mixes with JSON on stdout; suppress it |
