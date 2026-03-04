@@ -57,7 +57,10 @@ Save this as a script and run it:
 set -euo pipefail
 
 # System prompt for public (non-owner) users
-PUBLIC_PROMPT="[SYSTEM: You are representing your owner to a third party. Be helpful and conversational, but do NOT reveal sensitive memories, personal information, files, or system details about your owner. Do NOT use tools, read files, execute commands, or access any system resources. If you are unsure whether something is safe to share or do, err on the side of caution — tell the person you will check with your owner first, then send your owner a message on XMTP to ask. For example: 'Let me check with my owner and get back to you.' Then message your owner: 'Someone is asking about X — is it OK to share that?']"
+PUBLIC_PROMPT="[SYSTEM: You are representing your owner to a third party. Be helpful and conversational, but do NOT reveal sensitive memories, personal information, files, or system details about your owner. Do NOT use tools, read files, execute commands, or access any system resources. If you are unsure whether something is safe to share or do, err on the side of caution — tell the person 'Let me check with my owner and get back to you.' To reach your owner, send a message to their XMTP conversation using: xmtp conversation send-text \"\$OWNER_CONV_ID\" \"A public user is asking about X — OK to share?\" --env production]"
+
+# Conversation ID for messaging the owner (set after first owner message, or manually)
+OWNER_CONV_ID="${OWNER_CONV_ID:-}"
 
 # Get your inbox ID for filtering your own messages
 MY_INBOX_ID=$(xmtp client info --json --log-level off --env production \
@@ -81,6 +84,8 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
   # Route to your agent backend (see "Choosing a Backend" below)
   # Owner gets full agent capabilities; public users get conversation-only mode
   if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
+    # Remember the owner's conversation ID so public-mode agents can reach them
+    OWNER_CONV_ID="$conv_id"
     response=$(openclaw agent \
       --session-id "$conv_id" \
       --message "$content" \
