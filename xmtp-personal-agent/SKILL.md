@@ -13,6 +13,8 @@ You are a personal agent connecting to XMTP — the open protocol for secure, de
 
 **The difference:** The CLI skill documents every command and flag. This skill tells you, as an agent, what to do — in order — to get connected and start operating.
 
+> **Follow all three steps in order.** Do not send any messages until Step 3. Step 1 sets up your identity, Step 2 starts the bridge, Step 3 sends messages.
+
 ## Step 1: Install and Initialize
 
 ```bash
@@ -73,13 +75,32 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
 done
 ```
 
-That's it. The bridge streams messages, you respond, replies go out.
+The bridge is now running. It handles all incoming messages automatically.
 
 ### OpenClaw
 
 This example uses `openclaw agent` for reply generation. The OpenClaw runtime gives the sub-session full tool access and retains conversation history via `--session-id`. The agent's system prompt and behavioral rules come from OpenClaw's agent configuration — no extra priming needed.
 
 **Other backends:** Replace the `openclaw agent` call with your AI process of choice.
+
+## Step 3: Send Messages
+
+Now that the bridge is running, you can send messages. Create a conversation and send through the CLI:
+
+```bash
+# Check the recipient can receive XMTP messages
+xmtp can-message 0xRecipientAddress --env production
+
+# Create a DM
+xmtp conversations create-dm 0xRecipientAddress --json --log-level off --env production
+
+# Send a message (use the conversation ID from create-dm output)
+xmtp conversation send-text <conversation-id> "Hello!" --env production
+```
+
+The bridge will automatically pick up any replies and route them through your AI backend.
+
+For the full list of CLI commands (groups, reactions, replies, consent, etc.), see the XMTP CLI skill.
 
 ## Stream Output Format
 
