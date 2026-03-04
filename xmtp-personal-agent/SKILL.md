@@ -11,6 +11,8 @@ description: >
 
 Connect your agent to XMTP — the open protocol for secure, decentralized messaging. Your agent gets its own identity on the network and can message people, join groups, and respond to conversations using the XMTP CLI.
 
+> **Before continuing:** Read the XMTP CLI skill for full command reference. It lives at `packages/xmtp-cli/skills/xmtp-cli/SKILL.md` in the [xmtp-js repo](https://github.com/xmtp/xmtp-js). This skill covers only what's specific to running as a personal agent — the bridge pattern, stream output format, and agent behavioral guidance.
+
 ## Getting Started
 
 ### Install
@@ -129,69 +131,10 @@ Each line from `stream-all-messages --json` is a JSON object:
 5. Passes each message to `openclaw agent`, which returns plaintext
 6. Sends the reply back via `xmtp conversation send-text`
 
-## CLI Reference
-
-Individual commands used by the bridge. Use these directly only for setup tasks (checking reachability, creating conversations) — not for sending messages during a conversation.
-
-### Check reachability
-
-```bash
-xmtp can-message 0xAddress --env production
-```
-
-### Create a DM
-
-```bash
-xmtp conversations create-dm 0xAddress --json --env production
-```
-
-### Create a group
-
-```bash
-xmtp conversations create-group 0xAddr1 0xAddr2 --name "Group Name" --json --env production
-```
-
-### Stream messages
-
-```bash
-xmtp conversations stream-all-messages --json --log-level off --env production
-```
-
-Outputs ndjson — each line has `conversationId`, `senderInboxId`, `contentType.typeId`, and `content`.
-
-### Send text
-
-```bash
-xmtp conversation send-text <conversation-id> "Hello!" --env production
-```
-
-### Reply
-
-```bash
-xmtp conversation send-reply <conversation-id> <message-id> "Reply text" --env production
-```
-
-### React
-
-```bash
-xmtp conversation send-reaction <conversation-id> <message-id> add "👍" --env production
-```
-
-### Discover more
-
-```bash
-xmtp --help
-xmtp conversation --help
-xmtp conversations --help
-xmtp client --help
-```
-
 ## Behavioral Notes
 
 - **Respect consent** — check consent state before sending; don't message conversations you haven't been added to.
-- **Use `--json`** — always for programmatic output; human-readable is for debugging only.
 - **Use `--log-level off`** — suppresses log output that can interfere with JSON parsing.
-- **Sync first** — `xmtp conversations sync-all --env production` before reading history.
 - **Be concise** — agents that over-message get muted; react instead of replying when nothing substantive to add.
 - **Plain text** — no markdown; XMTP clients render raw formatting characters.
 
@@ -200,13 +143,8 @@ xmtp client --help
 | Mistake | Fix |
 |---------|-----|
 | Sending messages before starting bridge | Set up the bridge first; all messaging flows through it |
-| Missing `--env production` | Always pass `--env production` for live network; default is dev |
 | Reading `.inboxId` from client info | Inbox ID is at `.properties.inboxId` in the JSON output |
 | Using `openclaw chat` | Use `openclaw agent --session-id <id> --message "<text>"`; returns plaintext |
 | Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against agent's inbox ID |
 | Not using `--log-level off` | Log output can mix with JSON on stdout; suppress with `--log-level off` |
-| Sending without `can-message` check | Verify address is reachable before creating a conversation |
-| Not syncing before reading history | Run `xmtp conversations sync-all` before `messages` commands |
-| Parsing human-readable output | Use `--json` flag for all programmatic operations |
-| Using markdown in messages | XMTP clients display raw `**text**` — use plain text |
 | Announcing tool usage | Execute tools silently; respond naturally in conversation |
