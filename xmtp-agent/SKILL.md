@@ -112,7 +112,9 @@ done
 
 The bridge uses the XMTP conversation ID as the session ID so each person (or group) chatting with your agent gets their own persistent context.
 
-After the bridge is running, tell the user they can customize how the agent interacts with public users by editing `public-prompt.md`. Changes take effect immediately — no restart needed.
+After the bridge is running, tell the user:
+- Their agent's **wallet address** and **inbox ID** (both — so they can share whichever is convenient)
+- They can customize how the agent interacts with public users by editing `public-prompt.md`. Changes take effect immediately — no restart needed.
 
 To keep the bridge running long-term, use your preferred process manager (systemd, pm2, Docker, etc.).
 
