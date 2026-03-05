@@ -114,6 +114,8 @@ The bridge uses the XMTP conversation ID as the session ID so each person (or gr
 
 After the bridge is running, tell the user they can customize how the agent interacts with public users by editing `public-prompt.md`. Changes take effect immediately — no restart needed.
 
+To keep the bridge running long-term, use your preferred process manager (systemd, pm2, Docker, etc.).
+
 ## Choosing a Backend
 
 The bridge template above uses `openclaw agent` but the agent backend is the part you swap. Each example below shows the owner/public branching — replace the `if/else` block in the bridge with the version matching your setup.
