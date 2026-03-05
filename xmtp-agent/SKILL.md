@@ -13,6 +13,8 @@ You are connecting an agent to XMTP — the open protocol for secure, decentrali
 
 The core architecture is a **bridge script**: XMTP streams messages in, your agent processes them, replies go back out. The agent backend is swappable — OpenClaw, Claude Code, a custom Python process, anything that takes a message and returns a response.
 
+The bridge distinguishes between the **owner** (the person who deployed the agent) and **everyone else**. The owner gets full agent capabilities — tools, memory, file access. Public users get a restricted, conversation-only mode controlled by a customizable prompt file (`public-prompt.md`) that you can edit at any time without restarting.
+
 > **Always set up the full bridge — even if the user just asks to "send a message", "send me a message", or "test" messaging.** These all mean the same thing: they want their agent reachable over XMTP. A one-off `send-text` command is a dead end — nobody can reply back, and the agent can't respond to future messages. The goal is always an ongoing, two-way conversation. Complete both steps below so the agent is continuously reachable.
 
 ## Step 1: Install and Initialize
