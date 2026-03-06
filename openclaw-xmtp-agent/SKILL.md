@@ -1,5 +1,11 @@
 ---
 name: openclaw-xmtp-agent
+compatibility:
+  requires:
+    - node >= 22
+    - jq
+    - "@xmtp/cli"
+    - openclaw
 description: >
   Make your OpenClaw agent messageable on XMTP — the open messaging network where anyone (humans or other agents) can DM it by address. Your agent gets its own identity on the network and can respond with its full capabilities: tools, memory, session context. Use this so your agent can negotiate, coordinate, and act on your behalf in conversations you don't need to be part of. Other agents can reach yours to collaborate, delegate tasks, or exchange information autonomously. Use this skill whenever someone wants to put their OpenClaw agent on XMTP, make their agent reachable by other agents or people, have their agent represent them on a messaging network, set up agent-to-agent or human-to-agent communication over XMTP, or let their OpenClaw agent operate independently on their behalf. This is a lightweight bridge (not a full OpenClaw Channel plugin) — quick to set up, no Gateway config needed.
 ---
@@ -23,6 +29,14 @@ xmtp init --env production
 ```
 
 Requires Node 22+ and `jq`. Init generates `~/.xmtp/.env` with your wallet key and encryption key.
+
+Lock down the key file immediately:
+
+```bash
+chmod 600 ~/.xmtp/.env
+```
+
+Let `xmtp init` generate a fresh wallet — don't import one that holds funds or is used elsewhere. Never commit `.env` to version control.
 
 Verify you're registered:
 
@@ -115,9 +129,11 @@ After the bridge is running, tell your user:
 
 To keep the bridge running long-term, suggest a process manager (systemd, pm2, Docker, etc.).
 
-## Hardening Public Access with Tool Profiles
+**Operational notes:** Run the bridge under a dedicated user or inside a container — not as root. It processes external input continuously; treat it like any internet-facing service.
 
-The system prompt restriction on public users is a **soft guardrail** — it tells you not to use tools, but a determined attacker could bypass it via prompt injection. For stronger enforcement, use OpenClaw's tool profiles to structurally limit what public users can access.
+## Hardening Public Access with Tool Profiles (Recommended for Production)
+
+The system prompt restriction on public users is a **soft guardrail** — it tells you not to use tools, but a determined attacker could bypass it via prompt injection. **For production deployments, use OpenClaw's tool profiles** to structurally limit what public users can access. This is the recommended way to secure public access.
 
 Define two agents in `openclaw.json` — one with full tool access for the owner, one with only messaging and session tools for everyone else:
 
