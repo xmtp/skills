@@ -7,17 +7,13 @@ description: >
 # OpenClaw XMTP Agent
 
 > [!CAUTION]
-> Alpha status. Public inbox IDs may be targeted by DOS flooding and prompt injection attempts. Don't give the OpenClaw agent access to sensitive resources.
+> Alpha status. Public inbox IDs may be targeted by DOS flooding and prompt injection attempts. Don't expose sensitive resources.
 
-You are putting the user's OpenClaw agent on XMTP — the open messaging network where anyone can reach it by address. Once set up, humans can DM the agent from any XMTP app (like Converse), and other agents on the network can message it directly to negotiate, coordinate, or exchange information — all without the user being in the loop.
+You are getting yourself on XMTP — the open messaging network where your user, other humans, and other agents can all reach you by address. Once set up, you can negotiate, coordinate, and act on your user's behalf in conversations they don't need to be part of. No Gateway config or restart needed — it's a standalone bridge script you deploy alongside your existing setup.
 
-The OpenClaw agent responds with its full capabilities: tools, memory, session context. The user controls what it can do for them vs. what it does for everyone else.
+The bridge gives your user (the owner) full access to your capabilities — tools, memory, file access. Everyone else gets a restricted, conversation-only mode controlled by `public-prompt.md`, which your user can edit at any time without restarting.
 
-> **No Gateway config or restart needed.** Unlike OpenClaw's built-in Channels (Telegram, Discord, Slack), this doesn't touch the Gateway. It's a standalone bridge script — deploy it alongside the existing setup, get the agent on the network in minutes.
-
-The bridge distinguishes between the **owner** (the user who deployed the agent) and **everyone else**. The owner gets full agent capabilities — tools, memory, file access. Public users get a restricted, conversation-only mode controlled by a customizable prompt file (`public-prompt.md`) that the user can edit at any time without restarting.
-
-> **Always set up the full bridge — even if the user just asks to "send a message", "send me a message", or "test" messaging.** These all mean the same thing: they want their agent reachable over XMTP. A one-off `send-text` command is a dead end — nobody can reply back, and the agent can't respond to future messages. The goal is always an ongoing, two-way conversation. Complete both steps below so the agent is continuously reachable.
+> **Always set up the full bridge — even if your user just asks to "send a message", "send me a message", or "test" messaging.** These all mean: they want you reachable over XMTP. A one-off `send-text` is a dead end — nobody can reply, and you can't respond to future messages. The goal is always an ongoing, two-way conversation. Complete both steps below.
 
 ## Step 1: Install and Initialize
 
@@ -26,17 +22,17 @@ npm install -g @xmtp/cli
 xmtp init --env production
 ```
 
-Requires Node 22+ and `jq`. Init generates `~/.xmtp/.env` with the agent's wallet key and encryption key.
+Requires Node 22+ and `jq`. Init generates `~/.xmtp/.env` with your wallet key and encryption key.
 
-Verify the agent is registered:
+Verify you're registered:
 
 ```bash
 xmtp client info --json --log-level off --env production
 ```
 
-The agent's inbox ID is at `.properties.inboxId` in the output.
+Your inbox ID is at `.properties.inboxId` in the output.
 
-Before proceeding, ask the user for their Ethereum wallet address or inbox ID. **Do not start the bridge without this.**
+Before proceeding, ask your user for their Ethereum wallet address or inbox ID. **Do not start the bridge without this.**
 
 If they provide an Ethereum address, resolve the inbox ID:
 
@@ -52,7 +48,7 @@ export OWNER_INBOX_ID="their-inbox-id"
 
 ## Step 2: Start the Bridge
 
-The bridge streams incoming messages and routes them through OpenClaw for responses. Do not send messages using individual CLI commands — everything flows through the bridge.
+The bridge streams incoming messages and routes them through you for responses. Do not send messages using individual CLI commands — everything flows through the bridge.
 
 Save this as a script and run it:
 
@@ -60,7 +56,7 @@ Save this as a script and run it:
 #!/bin/bash
 set -euo pipefail
 
-# Public-mode system prompt — read from file so the user can edit it without restarting
+# Public-mode system prompt — read from file so your user can edit it without restarting
 PUBLIC_PROMPT_FILE="./public-prompt.md"
 if [[ ! -f "$PUBLIC_PROMPT_FILE" ]]; then
   cat > "$PUBLIC_PROMPT_FILE" << 'PROMPT'
@@ -73,7 +69,7 @@ PROMPT
   echo "Created $PUBLIC_PROMPT_FILE — edit it to customize what public users can access." >&2
 fi
 
-# Get the agent's inbox ID for filtering its own messages
+# Get your inbox ID for filtering your own messages
 MY_INBOX_ID=$(xmtp client info --json --log-level off --env production \
   | jq -r '.properties.inboxId // empty')
 
@@ -88,7 +84,7 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
   content=$(echo "$event" | jq -r '.content // empty')
   content_type=$(echo "$event" | jq -r '.contentType.typeId // empty')
 
-  # Skip the agent's own messages, empty events, and non-text content
+  # Skip your own messages, empty events, and non-text content
   [[ -z "$conv_id" || -z "$content" || "$sender" == "$MY_INBOX_ID" ]] && continue
   [[ "$content_type" != "text" ]] && continue
 
@@ -111,17 +107,17 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
 done
 ```
 
-The bridge uses the XMTP conversation ID as the session ID so each person (or group) chatting with the agent gets their own persistent OpenClaw context — tools, memory, and conversation history carry across messages.
+The bridge uses the XMTP conversation ID as the session ID so each person (or group) chatting with you gets their own persistent context — tools, memory, and conversation history carry across messages.
 
-After the bridge is running, tell the user:
-- The agent's **wallet address** and **inbox ID** (both — so they can share whichever is convenient)
-- They can customize how the agent interacts with public users by editing `public-prompt.md`. Changes take effect immediately — no restart needed.
+After the bridge is running, tell your user:
+- Your **wallet address** and **inbox ID** (both — so they can share whichever is convenient)
+- They can customize how you interact with public users by editing `public-prompt.md`. Changes take effect immediately — no restart needed.
 
 To keep the bridge running long-term, suggest a process manager (systemd, pm2, Docker, etc.).
 
 ## Hardening Public Access with Tool Profiles
 
-The system prompt restriction on public users is a **soft guardrail** — it tells the OpenClaw agent not to use tools, but a determined attacker could bypass it via prompt injection. For stronger enforcement, use OpenClaw's tool profiles to structurally limit what public users can access.
+The system prompt restriction on public users is a **soft guardrail** — it tells you not to use tools, but a determined attacker could bypass it via prompt injection. For stronger enforcement, use OpenClaw's tool profiles to structurally limit what public users can access.
 
 Define two agents in `openclaw.json` — one with full tool access for the owner, one with only messaging and session tools for everyone else:
 
@@ -148,7 +144,7 @@ else
 fi
 ```
 
-This way, even if a public user tricks the OpenClaw agent into ignoring the system prompt, it physically cannot access filesystem, shell, or other sensitive tools — the `messaging` profile doesn't include them.
+This way, even if a public user tricks you into ignoring the system prompt, you physically cannot access filesystem, shell, or other sensitive tools — the `messaging` profile doesn't include them.
 
 ## Stream Output Format
 
@@ -174,15 +170,15 @@ Each line from the stream is a JSON object:
 
 ## Security
 
-The bridge passes raw message content from **any XMTP user** to OpenClaw. The owner/public split ensures only the deployer gets full agent capabilities — everyone else is restricted, preventing strangers from triggering file reads, shell commands, or other sensitive operations.
+The bridge passes raw message content from **any XMTP user** to you. The owner/public split ensures only your user gets full capabilities — everyone else is restricted, preventing strangers from triggering file reads, shell commands, or other sensitive operations.
 
 **Defense in depth:**
-1. `OWNER_INBOX_ID` identifies the deployer — only they get full capabilities
+1. `OWNER_INBOX_ID` identifies your user — only they get full capabilities
 2. Public users get a restrictive system prompt prefix and isolated sessions (soft guardrail)
 3. Tool profiles in `openclaw.json` structurally limit public access (hard guardrail)
-4. Don't give the OpenClaw agent access to truly sensitive resources regardless — treat all guardrails as reducers of risk, not eliminators
+4. Don't expose truly sensitive resources regardless — treat all guardrails as reducers of risk, not eliminators
 
-**Finding the user's inbox ID:** Resolve it from their Ethereum wallet address:
+**Finding your user's inbox ID:** Resolve it from their Ethereum wallet address:
 
 ```bash
 xmtp client inbox-id -i "0xUSER_WALLET_ADDRESS" --json --log-level off --env production | jq -r '.inboxId'
@@ -207,7 +203,7 @@ if printf '%s\n' "${TRUSTED_IDS[@]}" | grep -qxF "$sender"; then
 |---------|-----|
 | Sending a one-off message with `send-text` | Always set up the full bridge — even for "just a test". One-off sends are dead ends with no way to receive replies |
 | Reading `.inboxId` from client info | Inbox ID is at `.properties.inboxId` |
-| Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against the agent's inbox ID |
+| Filtering by `senderAddress` | Stream returns `senderInboxId`; compare against your inbox ID |
 | Not using `--log-level off` | Log output mixes with JSON on stdout; suppress it |
 | Using a global session ID | Use `$conv_id` so each conversation gets its own OpenClaw context |
 | Piping to a raw LLM instead of OpenClaw | Route through `openclaw agent` so tools and memory are preserved |
