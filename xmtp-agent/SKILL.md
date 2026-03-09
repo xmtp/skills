@@ -7,7 +7,7 @@ description: >
 # XMTP Agent
 
 > [!CAUTION]
-> Alpha status. Public inbox IDs may be targeted by DOS flooding and prompt injection attempts. Don't give the agent access to sensitive resources.
+> Alpha status. Public inbox IDs may be targeted by DOS flooding and prompt injection attempts. Don't give the agent access to sensitive resources. By default, agents store their keys in plaintext — any process running as your user (or root) can read them. Protect them as you would any other secret.
 
 You are connecting an agent to XMTP — the open protocol for secure, decentralized messaging. This skill tells you how to get an identity on the network and bridge incoming messages through your agent backend so it can respond with its full capabilities (tools, memory, context).
 

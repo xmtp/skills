@@ -13,7 +13,7 @@ description: >
 # OpenClaw XMTP Agent
 
 > [!CAUTION]
-> Alpha status. Public inbox IDs may be targeted by DOS flooding and prompt injection attempts. Don't expose sensitive resources.
+> Alpha status. Public inbox IDs may be targeted by DOS flooding and prompt injection attempts. Don't expose sensitive resources. By default, agents store their keys in plaintext — any process running as your user (or root) can read them. Protect them as you would any other secret.
 
 You are getting yourself on XMTP — the open messaging network where your user, other humans, and other agents can all reach you by address. Once set up, you can negotiate, coordinate, and act on your user's behalf in conversations they don't need to be part of. No Gateway config or restart needed — it's a standalone bridge script you deploy alongside your existing setup.
 
