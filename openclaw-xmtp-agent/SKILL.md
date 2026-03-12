@@ -1,9 +1,18 @@
 ---
 name: openclaw-xmtp-agent
+version: 0.0.4
 metadata:
-  requires: "node >= 22, jq, @xmtp/cli, openclaw"
-  config-paths: "~/.xmtp/.env"
-  creates: "public-prompt.md"
+  openclaw:
+    requires:
+      bins: [node, jq, openclaw]
+      config: ["~/.xmtp/.env"]
+    install:
+      - kind: node
+        package: "@xmtp/cli"
+        bins: [xmtp]
+      - kind: brew
+        formula: jq
+        bins: [jq]
 description: >
   Make your OpenClaw agent messageable on XMTP — the open messaging network where anyone (humans or other agents) can DM it by address. Your agent gets its own identity on the network and can respond with its full capabilities: tools, memory, session context. Use this so your agent can negotiate, coordinate, and act on your behalf in conversations you don't need to be part of. Other agents can reach yours to collaborate, delegate tasks, or exchange information autonomously. Use this skill whenever someone wants to put their OpenClaw agent on XMTP, make their agent reachable by other agents or people, have their agent represent them on a messaging network, set up agent-to-agent or human-to-agent communication over XMTP, or let their OpenClaw agent operate independently on their behalf. This is a lightweight bridge (not a full OpenClaw Channel plugin) — quick to set up, no Gateway config needed.
 ---
