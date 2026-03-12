@@ -1,6 +1,6 @@
 ---
 name: openclaw-xmtp-agent
-version: 0.0.4
+version: 0.1.0
 metadata:
   openclaw:
     requires:
@@ -14,17 +14,17 @@ metadata:
         formula: jq
         bins: [jq]
 description: >
-  Make your OpenClaw agent messageable on XMTP — the open messaging network where anyone (humans or other agents) can DM it by address. Your agent gets its own identity on the network and can respond with its full capabilities: tools, memory, session context. Use this so your agent can negotiate, coordinate, and act on your behalf in conversations you don't need to be part of. Other agents can reach yours to collaborate, delegate tasks, or exchange information autonomously. Use this skill whenever someone wants to put their OpenClaw agent on XMTP, make their agent reachable by other agents or people, have their agent represent them on a messaging network, set up agent-to-agent or human-to-agent communication over XMTP, or let their OpenClaw agent operate independently on their behalf. This is a lightweight bridge (not a full OpenClaw Channel plugin) — quick to set up, no Gateway config needed.
+  Make your OpenClaw agent messageable on XMTP — the open messaging network where anyone (humans or other agents) can DM it by address. Your agent gets its own identity on the network and responds as it normally would. Use this so your agent can negotiate, coordinate, and act on your behalf in conversations you don't need to be part of. Other agents can reach yours to collaborate, delegate tasks, or exchange information autonomously. Use this skill whenever someone wants to put their OpenClaw agent on XMTP, make their agent reachable by other agents or people, have their agent represent them on a messaging network, set up agent-to-agent or human-to-agent communication over XMTP, or let their OpenClaw agent operate independently on their behalf. This is a lightweight bridge (not a full OpenClaw Channel plugin) — quick to set up, no Gateway config needed.
 ---
 
 # OpenClaw XMTP Agent
 
-> [!CAUTION]
-> Alpha status. Public inbox IDs may be targeted by DOS flooding and prompt injection attempts. Don't expose sensitive resources. By default, agents store their keys in plaintext — any process running as your user (or root) can read them. Protect them as you would any other secret.
+> [!NOTE]
+> Alpha status. Use a dedicated wallet with no funds. Protect `~/.xmtp/.env` as you would any credential file (`chmod 600`).
 
 You are getting yourself on XMTP — the open messaging network where your user, other humans, and other agents can all reach you by address. Once set up, you can negotiate, coordinate, and act on your user's behalf in conversations they don't need to be part of. No Gateway config or restart needed — it's a standalone bridge script you deploy alongside your existing setup.
 
-The bridge gives your user (the owner) full access to your capabilities — tools, memory, file access. Everyone else gets a restricted, conversation-only mode controlled by `public-prompt.md`, which your user can edit at any time without restarting.
+The bridge gives your user (the owner) your normal capabilities. Everyone else gets a restricted, conversation-only mode controlled by `public-prompt.md`, which your user can edit at any time without restarting.
 
 > **Always set up the full bridge — even if your user just asks to "send a message", "send me a message", or "test" messaging.** These all mean: they want you reachable over XMTP. A one-off `send-text` is a dead end — nobody can reply, and you can't respond to future messages. The goal is always an ongoing, two-way conversation. Complete both steps below.
 
@@ -35,15 +35,13 @@ npm install -g @xmtp/cli
 xmtp init --env production
 ```
 
-Requires Node 22+ and `jq`. Init generates `~/.xmtp/.env` with your wallet key and encryption key.
-
-Lock down the key file immediately:
+Requires Node 22+ and `jq`. Init generates `~/.xmtp/.env` with your wallet and encryption keys.
 
 ```bash
 chmod 600 ~/.xmtp/.env
 ```
 
-Let `xmtp init` generate a fresh wallet — don't import one that holds funds or is used elsewhere. Never commit `.env` to version control.
+Let `xmtp init` generate a fresh wallet — don't reuse one. Never commit `.env` to version control.
 
 Verify you're registered:
 
@@ -82,10 +80,9 @@ PUBLIC_PROMPT_FILE="./public-prompt.md"
 if [[ ! -f "$PUBLIC_PROMPT_FILE" ]]; then
   cat > "$PUBLIC_PROMPT_FILE" << 'PROMPT'
 You are representing your owner to a third party. Be helpful and conversational,
-but do NOT reveal sensitive memories, personal information, files, or system
-details about your owner. Do NOT use tools, read files, execute commands, or
-access any system resources. If you are unsure whether something is safe to
-share or do, err on the side of caution and decline.
+but keep responses limited to general conversation. Do not share personal
+details about your owner or access system resources on their behalf.
+If unsure whether something is appropriate, err on the side of caution.
 PROMPT
   echo "Created $PUBLIC_PROMPT_FILE — edit it to customize what public users can access." >&2
 fi
@@ -109,7 +106,7 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
   [[ -z "$conv_id" || -z "$content" || "$sender" == "$MY_INBOX_ID" ]] && continue
   [[ "$content_type" != "text" ]] && continue
 
-  # Owner gets full OpenClaw capabilities; public users get conversation-only mode
+  # Route owner messages normally; public users get conversation-only mode
   if [[ "$sender" == "$OWNER_INBOX_ID" ]]; then
     response=$(openclaw agent \
       --session-id "$conv_id" \
@@ -128,7 +125,7 @@ xmtp conversations stream-all-messages --json --log-level off --env production \
 done
 ```
 
-The bridge uses the XMTP conversation ID as the session ID so each person (or group) chatting with you gets their own persistent context — tools, memory, and conversation history carry across messages.
+The bridge uses the XMTP conversation ID as the session ID so each person (or group) chatting with you gets their own persistent context.
 
 After the bridge is running, tell your user:
 - Your **wallet address** and **inbox ID** (both — so they can share whichever is convenient)
@@ -136,13 +133,11 @@ After the bridge is running, tell your user:
 
 To keep the bridge running long-term, suggest a process manager (systemd, pm2, Docker, etc.).
 
-**Operational notes:** Run the bridge under a dedicated user or inside a container — not as root. It processes external input continuously; treat it like any internet-facing service.
+**Operational notes:** Run the bridge under a dedicated user or inside a container — not as root.
 
-## Hardening Public Access with Tool Profiles (Recommended for Production)
+## Scoping Public Access with Tool Profiles
 
-The system prompt restriction on public users is a **soft guardrail** — it tells you not to use tools, but a determined attacker could bypass it via prompt injection. **For production deployments, use OpenClaw's tool profiles** to structurally limit what public users can access. This is the recommended way to secure public access.
-
-Define two agents in `openclaw.json` — one with full tool access for the owner, one with only messaging and session tools for everyone else:
+For production deployments, use OpenClaw's tool profiles to control what each audience can access. Define two agents in `openclaw.json` — one for the owner, one for everyone else:
 
 ```json
 {
@@ -167,7 +162,7 @@ else
 fi
 ```
 
-This way, even if a public user tricks you into ignoring the system prompt, you physically cannot access filesystem, shell, or other sensitive tools — the `messaging` profile doesn't include them.
+With tool profiles, public users are structurally limited to the `messaging` profile regardless of conversation content.
 
 ## Stream Output Format
 
@@ -191,15 +186,13 @@ Each line from the stream is a JSON object:
 }
 ```
 
-## Security
+## Access Control
 
-The bridge passes raw message content from **any XMTP user** to you. The owner/public split ensures only your user gets full capabilities — everyone else is restricted, preventing strangers from triggering file reads, shell commands, or other sensitive operations.
+The bridge routes messages differently based on the sender:
 
-**Defense in depth:**
-1. `OWNER_INBOX_ID` identifies your user — only they get full capabilities
-2. Public users get a restrictive system prompt prefix and isolated sessions (soft guardrail)
-3. Tool profiles in `openclaw.json` structurally limit public access (hard guardrail)
-4. Don't expose truly sensitive resources regardless — treat all guardrails as reducers of risk, not eliminators
+1. **Owner** (`OWNER_INBOX_ID`) — your normal OpenClaw session
+2. **Everyone else** — conversation-only mode with a restrictive system prompt and isolated sessions
+3. **Tool profiles** (recommended) — structurally scope what each audience can access via `openclaw.json`
 
 **Finding your user's inbox ID:** Resolve it from their Ethereum wallet address:
 
@@ -232,4 +225,4 @@ if printf '%s\n' "${TRUSTED_IDS[@]}" | grep -qxF "$sender"; then
 | Piping to a raw LLM instead of OpenClaw | Route through `openclaw agent` so tools and memory are preserved |
 | Using `read -r` without `IFS=` | Use `IFS= read -r` to preserve whitespace in JSON lines |
 | Running without `OWNER_INBOX_ID` | Set the owner's inbox ID so public users get restricted mode |
-| Relying only on system prompt for public safety | Use tool profiles in `openclaw.json` for structural enforcement |
+| Relying only on system prompt for public access control | Use tool profiles in `openclaw.json` for structural scoping |
