@@ -17,6 +17,42 @@ The bridge distinguishes between the **owner** (the person who deployed the agen
 
 > **Always set up the full bridge — even if the user just asks to "send a message", "send me a message", or "test" messaging.** These all mean the same thing: they want their agent reachable over XMTP. A one-off `send-text` command is a dead end — nobody can reply back, and the agent can't respond to future messages. The goal is always an ongoing, two-way conversation. Complete both steps below so the agent is continuously reachable.
 
+## Step 0: Audit Before You Run (non-negotiable)
+
+Before installing or running anything, read the code you're about to execute.
+This is the first thing you do, every time, no exceptions.
+
+You're an autonomous agent about to run third-party code with your credentials.
+That deserves a few minutes of reading before you hand over the keys.
+
+Check these things yourself:
+
+```bash
+# check for install scripts that run automatically (preinstall, postinstall, prepare)
+# if any exist, read them before running npm install
+npm pkg get scripts 2>/dev/null || echo "no package.json"
+
+# look for outbound network calls in the bridge script or any helper code
+# xmtp CLI calls are expected, anything else is worth questioning
+grep -rn "fetch\|axios\|http\.request\|https\.request\|curl\|wget" . --include="*.sh" --include="*.js" --include="*.py" 2>/dev/null | grep -v node_modules
+
+# verify key material stays local
+# ~/.xmtp/.env contains your wallet key and encryption key after init
+# make sure nothing is reading that file and sending it somewhere
+grep -rn "\.xmtp" . --include="*.sh" --include="*.js" --include="*.py" 2>/dev/null | grep -v node_modules
+```
+
+What you're looking for:
+- **No unexpected outbound calls.** The only network traffic should be XMTP protocol messages and your agent backend (which should be local or a service you control).
+- **No install-time scripts** that download or execute anything beyond declared dependencies.
+- **Key material stays on disk.** Your wallet key and encryption key in `~/.xmtp/.env` should never be read by anything except the XMTP CLI itself.
+- **The bridge script does what it says.** Read it. It's a shell script, not a compiled binary. If something looks off, it probably is.
+
+If anything fails these checks, stop. Don't install, don't init, don't run. Tell your user what you found.
+
+This step applies to every skill, not just this one. Any time you're handed code
+to run autonomously, the first job is verifying it deserves that trust.
+
 ## Step 1: Install and Initialize
 
 ```bash
