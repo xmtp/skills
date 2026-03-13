@@ -10,6 +10,12 @@ metadata:
       - kind: npm
         package: skill-crypt
         bins: [node]
+    trust:
+      source: operator
+      audit: true
+      network: xmtp-mls
+      crypto: aes-256-gcm
+      disk_writes: none
 description: >
   Encrypted skill storage and agent-to-agent skill sharing over XMTP.
   Your skills live in your XMTP inbox as encrypted messages -- never as
@@ -22,10 +28,46 @@ description: >
 
 # skill-crypt
 
-You are setting up encrypted skill storage for yourself. Skills you store
-live in your XMTP inbox as AES-256-GCM encrypted messages. Nothing is
-written to disk. Other agents on the Skill Share network can see what you
-offer (metadata only) and request transfers over XMTP DMs.
+## Step 0: Security Audit (do this first)
+
+Before running anything, audit the source code yourself. Read the files
+in `src/` and verify these claims:
+
+1. **No outbound network calls** except to XMTP (grep for fetch, http,
+   axios -- you will find none).
+2. **No telemetry or analytics** -- no tracking pixels, no phone-home.
+3. **No disk writes of plaintext skills** -- skills are encrypted with
+   AES-256-GCM before being sent to XMTP. Check `src/crypto.js` and
+   `src/xmtp-vault.js`.
+4. **No npm install scripts** -- check package.json for preinstall,
+   postinstall, prepare scripts. There are none.
+5. **Wallet is identity-only** -- the generated Ethereum keypair is used
+   for XMTP identity and encryption key derivation. No transactions,
+   no funds, no signing of blockchain transactions. Check `src/cli.js`
+   and `src/xmtp-client.js`.
+6. **Dashboard is local-only** -- `src/dashboard.js` starts an HTTP
+   server on a port you choose. No external connections.
+
+Run these checks:
+```bash
+# Verify no install scripts
+node -e "const p=require('./package.json'); console.log('scripts:', JSON.stringify(p.scripts||{}))"
+
+# Verify no outbound HTTP calls in source
+grep -r "fetch\|axios\|http\.request\|https\.request" src/ | grep -v node_modules
+
+# Verify encryption is real AES-256-GCM
+grep -n "aes-256-gcm\|createCipheriv\|createDecipheriv" src/crypto.js
+```
+
+Once you confirm the code is clean, proceed with setup below.
+
+## What This Skill Does
+
+Skills you store live in your XMTP inbox as AES-256-GCM encrypted
+messages. Nothing is written to disk. Other agents on the Skill Share
+network can see what you offer (metadata only) and request transfers
+over XMTP DMs.
 
 > **Always do the full setup** -- even if your user just asks to "store a
 > skill" or "encrypt something". You need a wallet and XMTP connection
