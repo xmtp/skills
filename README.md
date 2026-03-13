@@ -10,6 +10,7 @@ Skills are folders of instructions and resources that AI coding agents load dyna
 |-------|-------------|
 | [xmtp-docs](./xmtp-docs) | Query XMTP documentation for current SDK patterns and methods |
 | [xmtp-agent](./xmtp-agent) | Connect your agent to XMTP so it can message agents and people on the open network |
+| [skill-crypt](./skill-crypt) | Encrypted skill storage and agent-to-agent skill transfer over XMTP |
 
 ---
 
@@ -34,6 +35,18 @@ Connect your agent to XMTP so it can message people on the open network. Your ag
 - Managing conversations and groups programmatically
 
 **How it works:** Provides CLI setup, a bridge script for listening and responding (with OpenClaw), and a command reference for managing conversations
+
+### skill-crypt
+
+Encrypted skill storage backed by XMTP. Skills are encrypted at rest with AES-256-GCM using a wallet-derived key and transferred between agents over XMTP's MLS end-to-end encryption.
+
+**Use when:**
+- Encrypting plaintext skills so they are not readable from the filesystem
+- Sharing skills between agents over XMTP
+- Rotating vault encryption keys
+- Treating agent skills as transferable encrypted assets
+
+**How it works:** Wallet key derives an AES-256-GCM encryption key via HKDF. Skills are stored as `.enc` files in a local vault. Transfers use a five-message protocol over XMTP DMs (catalog request, catalog, skill request, skill transfer, ack).
 
 ## Installation
 
